@@ -16,7 +16,7 @@ export default function AIAssistant() {
     {
       id: '1',
       type: 'assistant',
-      content: "Hello! I'm your AI business assistant powered by OpenAI. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
+      content: "Hello! I'm your AI business assistant powered by OpenRouter. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
       timestamp: new Date()
     }
   ]);
@@ -37,8 +37,8 @@ export default function AIAssistant() {
     if (!input.trim() || isLoading) return;
 
     // Check if API key is configured
-    if (!import.meta.env.VITE_OPENAI_API_KEY || import.meta.env.VITE_OPENAI_API_KEY === 'your_openai_api_key_here') {
-      setError('OpenAI API key not configured. Please add your API key to the .env file.');
+    if (!import.meta.env.VITE_OPENROUTER_API_KEY || import.meta.env.VITE_OPENROUTER_API_KEY === 'your_openrouter_api_key_here') {
+      setError('OpenRouter API key not configured. Please add your API key to the .env file.');
       return;
     }
 
@@ -112,7 +112,7 @@ export default function AIAssistant() {
       {
         id: '1',
         type: 'assistant',
-        content: "Hello! I'm your AI business assistant powered by OpenAI. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
+        content: "Hello! I'm your AI business assistant powered by OpenRouter. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
         timestamp: new Date()
       }
     ]);
@@ -151,7 +151,7 @@ export default function AIAssistant() {
             </div>
             <div>
               <h1 className="text-lg font-semibold text-gray-900 sm:text-xl">AI Business Assistant</h1>
-              <p className="text-xs text-gray-500 sm:text-sm">Powered by OpenAI GPT</p>
+              <p className="text-xs text-gray-500 sm:text-sm">Powered by OpenRouter AI</p>
             </div>
           </div>
           <div className="flex items-center space-x-1 sm:space-x-2">
