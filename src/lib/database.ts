@@ -867,6 +867,158 @@ export class DatabaseService {
       throw new Error('Failed to get lesson progress');
     }
   }
+
+  // ==================== NOTES METHODS ====================
+
+  /**
+   * Create a new note
+   */
+  async createNote(input: CreateNoteInput): Promise<NoteRecord> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('notes')
+        .insert({
+          user_id: user.id,
+          content: input.content,
+          type: input.type,
+          related_id: input.related_id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating note:', error);
+      throw new Error('Failed to create note');
+    }
+  }
+
+  /**
+   * Get user's notes with optional filtering
+   */
+  async getNotes(
+    type?: 'assistant' | 'lesson',
+    relatedId?: string,
+    limit: number = 50
+  ): Promise<NoteRecord[]> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      let query = supabase
+        .from('notes')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (type) {
+        query = query.eq('type', type);
+      }
+
+      if (relatedId) {
+        query = query.eq('related_id', relatedId);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching notes:', error);
+      throw new Error('Failed to fetch notes');
+    }
+  }
+
+  /**
+   * Get notes for a specific lesson
+   */
+  async getLessonNotes(lessonId: string): Promise<NoteRecord[]> {
+    return this.getNotes('lesson', lessonId);
+  }
+
+  /**
+   * Get notes for a specific assistant chat
+   */
+  async getAssistantNotes(chatId: string): Promise<NoteRecord[]> {
+    return this.getNotes('assistant', chatId);
+  }
+
+  /**
+   * Update a note
+   */
+  async updateNote(noteId: string, content: string): Promise<NoteRecord> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('notes')
+        .update({ content })
+        .eq('id', noteId)
+        .eq('user_id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating note:', error);
+      throw new Error('Failed to update note');
+    }
+  }
+
+  /**
+   * Delete a note
+   */
+  async deleteNote(noteId: string): Promise<void> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { error } = await supabase
+        .from('notes')
+        .delete()
+        .eq('id', noteId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      throw new Error('Failed to delete note');
+    }
+  }
+
+  /**
+   * Search notes by content
+   */
+  async searchNotes(
+    query: string,
+    type?: 'assistant' | 'lesson'
+  ): Promise<NoteRecord[]> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      let dbQuery = supabase
+        .from('notes')
+        .select('*')
+        .eq('user_id', user.id)
+        .ilike('content', `%${query}%`)
+        .order('created_at', { ascending: false });
+
+      if (type) {
+        dbQuery = dbQuery.eq('type', type);
+      }
+
+      const { data, error } = await dbQuery;
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error searching notes:', error);
+      throw new Error('Failed to search notes');
+    }
+  }
 }
 
 /**
@@ -943,6 +1095,25 @@ export interface UserLearningStats {
 }
 
 /**
+ * Notes Interfaces
+ */
+export interface NoteRecord {
+  id: string;
+  user_id: string;
+  content: string;
+  type: 'assistant' | 'lesson';
+  related_id: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateNoteInput {
+  content: string;
+  type: 'assistant' | 'lesson';
+  related_id: string;
+}
+
+/**
  * Singleton Database Service Instance
  * 
  * Pre-configured DatabaseService instance ready for immediate use.
@@ -962,5 +1133,7 @@ export type {
   LessonRecord,
   UserProgressRecord,
   CourseProgressSummary,
-  UserLearningStats
+  UserLearningStats,
+  NoteRecord,
+  CreateNoteInput
 };

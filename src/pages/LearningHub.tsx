@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import { Play, BookOpen, Clock, Star, Bookmark, CheckCircle, Filter } from 'lucide-react';
+import { Play, BookOpen, Clock, Star, Bookmark, CheckCircle, Filter, StickyNote } from 'lucide-react';
 import { databaseService, type CourseRecord, type CourseProgressSummary } from '../lib/database';
+import NotesPanel from '../components/NotesPanel';</parameter>
 
 // Extended interface for UI state
 interface CourseWithProgress extends CourseRecord {
@@ -17,6 +18,10 @@ export default function LearningHub() {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [userStats, setUserStats] = useState<any>(null);
+
+  // Notes panel state
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
+  const [selectedCourseForNotes, setSelectedCourseForNotes] = useState<string | null>(null);
 
   const categories = ['All', 'Marketing', 'Finance', 'Operations', 'Strategy', 'Leadership'];
   const levels = ['All', 'beginner', 'intermediate', 'advanced'];
@@ -87,11 +92,30 @@ export default function LearningHub() {
   };
 
   return (
-    <div className="p-3 sm:p-6">
+    <div className="flex h-full">
+      {/* Main Learning Content */}
+      <div className="flex-1 p-3 sm:p-6 overflow-y-auto">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Learning Hub</h1>
+        <div className="flex items-center justify-between">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Learning Hub</h1>
         <p className="text-sm sm:text-base text-gray-600">Expand your business knowledge with expert-led courses</p>
+          </div>
+          
+          {/* Notes toggle button */}
+          <button
+            onClick={() => setShowNotesPanel(!showNotesPanel)}
+            className={`px-3 py-2 text-sm font-medium border rounded-lg transition-colors flex items-center space-x-2 ${
+              showNotesPanel
+                ? 'text-amber-700 bg-amber-50 border-amber-300'
+                : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+            }`}
+          >
+            <StickyNote className="h-4 w-4" />
+            <span className="hidden sm:inline">Learning Notes</span>
+          </button>
+        </div>
       </div>
 
       {/* Progress Overview */}
@@ -275,6 +299,18 @@ export default function LearningHub() {
                 <Play className="h-4 w-4" />
                 <span className="text-sm sm:text-base">{course.progress > 0 ? 'Continue' : 'Start Course'}</span>
               </button>
+              
+              {/* Course Notes Button */}
+              <button
+                onClick={() => {
+                  setSelectedCourseForNotes(course.id);
+                  setShowNotesPanel(true);
+                }}
+                className="w-full mt-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors flex items-center justify-center space-x-2"
+              >
+                <StickyNote className="h-4 w-4" />
+                <span className="text-sm">Course Notes</span>
+              </button>
             </div>
           </div>
         ))}
@@ -287,6 +323,20 @@ export default function LearningHub() {
           <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
           <p className="text-gray-600">Try adjusting your filters to see more courses.</p>
+        </div>
+      )}
+    </div>
+      </div>
+
+      {/* Notes Panel */}
+      {showNotesPanel && (
+        <div className="w-80 border-l border-gray-200 bg-white">
+          <NotesPanel 
+            type="lesson"
+            relatedId={selectedCourseForNotes || undefined}
+            title={selectedCourseForNotes ? "Course Notes" : "All Learning Notes"}
+            className="h-full rounded-none border-0 shadow-none"
+          />
         </div>
       )}
     </div>

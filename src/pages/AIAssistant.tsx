@@ -30,9 +30,10 @@
  * @version 1.0.0
  */
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Bot, User, Bookmark, Download, Trash2, AlertCircle, Loader2 } from 'lucide-react';
+import { Send, Bot, User, Bookmark, Download, Trash2, AlertCircle, Loader2, StickyNote } from 'lucide-react';
 import { businessAssistant, type ChatMessage } from '../lib/openai';
 import { databaseService, type ChatHistoryRecord } from '../lib/database';
+import NotesPanel from '../components/NotesPanel';</parameter>
 
 /**
  * Message Interface
@@ -96,6 +97,9 @@ export default function AIAssistant() {
   
   // Loading state for initial data fetch
   const [isInitialLoading, setIsInitialLoading] = useState(true);
+  
+  // Notes panel state
+  const [showNotesPanel, setShowNotesPanel] = useState(false);
   
   // Ref for auto-scrolling to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -464,7 +468,9 @@ export default function AIAssistant() {
    * - High contrast colors
    */
   return (
-    <div className="h-full flex flex-col bg-gray-50">
+    <div className="h-full flex bg-gray-50">
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
       {/* Initial Loading State */}
       {isInitialLoading && (
         <div className="flex-1 flex items-center justify-center">
@@ -508,6 +514,19 @@ export default function AIAssistant() {
             >
               <Trash2 className="h-4 w-4 sm:mr-2 inline" />
               <span className="hidden sm:inline">Clear</span>
+            </button>
+            
+            {/* Notes toggle button */}
+            <button
+              onClick={() => setShowNotesPanel(!showNotesPanel)}
+              className={`px-2 py-2 text-xs font-medium border rounded-md transition-colors sm:px-3 sm:text-sm ${
+                showNotesPanel
+                  ? 'text-amber-700 bg-amber-50 border-amber-300'
+                  : 'text-gray-700 bg-white border-gray-300 hover:bg-gray-50'
+              }`}
+            >
+              <StickyNote className="h-4 w-4 sm:mr-2 inline" />
+              <span className="hidden sm:inline">Notes</span>
             </button>
           </div>
         </div>
@@ -643,6 +662,18 @@ export default function AIAssistant() {
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>
+      )}
+      </div>
+
+      {/* Notes Panel */}
+      {showNotesPanel && (
+        <div className="w-80 border-l border-gray-200 bg-white">
+          <NotesPanel 
+            type="assistant"
+            title="Assistant Notes"
+            className="h-full rounded-none border-0 shadow-none"
+          />
+        </div>
       )}
     </div>
   );
