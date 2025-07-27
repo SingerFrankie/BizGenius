@@ -255,7 +255,7 @@ Each section should be detailed, professional, and specific to the business cont
         id: Date.now().toString(),
         title: `${input.businessName} Business Plan`,
         industry: input.industry,
-        createdAt: new Date(),
+        createdAt: new Date(), 
         sections,
         status: 'complete'
       };
