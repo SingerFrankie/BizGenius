@@ -1,7 +1,52 @@
+/**
+ * AI Assistant Page Component
+ * 
+ * This component provides a comprehensive AI-powered business assistant interface.
+ * It handles real-time conversations with AI, message management, and user interactions.
+ * 
+ * Key Features:
+ * - Real-time AI chat with business expertise
+ * - Message history and context management
+ * - Bookmarking important responses
+ * - Conversation export functionality
+ * - Mobile-first responsive design
+ * - Error handling and loading states
+ * - Keyboard shortcuts and accessibility
+ * 
+ * Architecture:
+ * - React functional component with hooks
+ * - State management for messages and UI states
+ * - Integration with OpenRouter API via businessAssistant
+ * - Responsive design with Tailwind CSS
+ * - Proper error boundaries and user feedback
+ * 
+ * Mobile-First Design:
+ * - Base styles for mobile (320px+)
+ * - Enhanced with sm: breakpoints (640px+)
+ * - Touch-friendly interface elements
+ * - Optimized typography and spacing
+ * 
+ * @author BizGenius Team
+ * @version 1.0.0
+ */
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Bookmark, Download, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { businessAssistant, type ChatMessage } from '../lib/openai';
 
+/**
+ * Message Interface
+ * 
+ * Defines the structure of chat messages in the UI.
+ * Extends the basic ChatMessage with UI-specific properties.
+ * 
+ * Properties:
+ * - id: Unique identifier for React keys and operations
+ * - type: Message sender (user or assistant)
+ * - content: Message text content
+ * - timestamp: When the message was created
+ * - bookmarked: Whether user has bookmarked this message
+ * - isStreaming: Whether message is currently being streamed (future feature)
+ */
 interface Message {
   id: string;
   type: 'user' | 'assistant';
@@ -11,7 +56,32 @@ interface Message {
   isStreaming?: boolean;
 }
 
+/**
+ * AIAssistant Component
+ * 
+ * Main component for the AI business assistant chat interface.
+ * Manages conversation state, API interactions, and user interface.
+ * 
+ * State Management:
+ * - messages: Array of conversation messages
+ * - input: Current user input text
+ * - isLoading: API request loading state
+ * - error: Error message display
+ * 
+ * Key Methods:
+ * - handleSend: Process user input and get AI response
+ * - toggleBookmark: Bookmark/unbookmark messages
+ * - clearConversation: Reset chat history
+ * - exportConversation: Download chat as text file
+ * 
+ * Responsive Design:
+ * - Mobile-first approach with base styles
+ * - sm: breakpoints for larger screens
+ * - Touch-friendly buttons and inputs
+ * - Adaptive text sizes and spacing
+ */
 export default function AIAssistant() {
+  // Message history state - starts with welcome message
   const [messages, setMessages] = useState<Message[]>([
     {
       id: '1',
@@ -20,28 +90,75 @@ export default function AIAssistant() {
       timestamp: new Date()
     }
   ]);
+  
+  // User input state
   const [input, setInput] = useState('');
+  
+  // Loading state for API requests
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Error state for user feedback
   const [error, setError] = useState<string | null>(null);
+  
+  // Ref for auto-scrolling to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  /**
+   * Auto-scroll to bottom of messages
+   * 
+   * Ensures new messages are always visible to the user.
+   * Uses smooth scrolling for better user experience.
+   */
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  /**
+   * Effect: Auto-scroll when messages change
+   * 
+   * Automatically scrolls to show new messages when they're added.
+   * Runs after every message state update.
+   */
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
+  /**
+   * Handle Send Message
+   * 
+   * Main method for processing user input and getting AI responses.
+   * Handles the complete conversation flow with proper error handling.
+   * 
+   * Process Flow:
+   * 1. Validate input and API configuration
+   * 2. Add user message to conversation
+   * 3. Send request to AI assistant
+   * 4. Add AI response to conversation
+   * 5. Handle errors and loading states
+   * 
+   * Error Handling:
+   * - API key validation
+   * - Network errors
+   * - Rate limiting
+   * - Invalid responses
+   * 
+   * State Management:
+   * - Updates messages array
+   * - Manages loading state
+   * - Handles error display
+   * - Clears input field
+   */
   const handleSend = async () => {
+    // Validate input and loading state
     if (!input.trim() || isLoading) return;
 
-    // Check if API key is configured
+    // Validate API key configuration
     if (!import.meta.env.VITE_OPENROUTER_API_KEY || import.meta.env.VITE_OPENROUTER_API_KEY === 'your_openrouter_api_key_here') {
       setError('OpenRouter API key not configured. Please add your API key to the .env file.');
       return;
     }
 
+    // Create user message object
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -49,13 +166,14 @@ export default function AIAssistant() {
       timestamp: new Date()
     };
 
+    // Update UI state
     setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsLoading(true);
     setError(null);
 
     try {
-      // Convert messages to OpenAI format
+      // Convert UI messages to API format
       const chatMessages: ChatMessage[] = messages
         .filter(msg => !msg.isStreaming)
         .map(msg => ({
@@ -63,15 +181,16 @@ export default function AIAssistant() {
           content: msg.content
         }));
 
-      // Add the current user message
+      // Include current user message in context
       chatMessages.push({
         role: 'user',
         content: input
       });
 
-      // Get AI response
+      // Request AI response with full conversation context
       const response = await businessAssistant.getChatCompletion(chatMessages);
 
+      // Create AI response message
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
@@ -79,12 +198,13 @@ export default function AIAssistant() {
         timestamp: new Date()
       };
 
+      // Add AI response to conversation
       setMessages(prev => [...prev, aiResponse]);
     } catch (error) {
       console.error('AI Assistant Error:', error);
       setError(error instanceof Error ? error.message : 'Failed to get AI response');
       
-      // Add error message to chat
+      // Add error message to conversation for user visibility
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
@@ -93,10 +213,24 @@ export default function AIAssistant() {
       };
       setMessages(prev => [...prev, errorMessage]);
     } finally {
+      // Always clear loading state
       setIsLoading(false);
     }
   };
 
+  /**
+   * Toggle Message Bookmark
+   * 
+   * Allows users to bookmark important AI responses for later reference.
+   * Updates the message's bookmarked status in the state.
+   * 
+   * @param messageId - ID of message to bookmark/unbookmark
+   * 
+   * Future Enhancement:
+   * - Persist bookmarks to localStorage or database
+   * - Add bookmark management interface
+   * - Export bookmarked messages separately
+   */
   const toggleBookmark = (messageId: string) => {
     setMessages(prev =>
       prev.map(msg =>
@@ -107,6 +241,17 @@ export default function AIAssistant() {
     );
   };
 
+  /**
+   * Clear Conversation
+   * 
+   * Resets the conversation to initial state with welcome message.
+   * Useful for starting fresh conversations or clearing sensitive data.
+   * 
+   * Resets:
+   * - Messages array to initial welcome message
+   * - Error state
+   * - Maintains user session and configuration
+   */
   const clearConversation = () => {
     setMessages([
       {
@@ -119,11 +264,31 @@ export default function AIAssistant() {
     setError(null);
   };
 
+  /**
+   * Export Conversation
+   * 
+   * Generates a downloadable text file of the entire conversation.
+   * Useful for record-keeping, sharing, or further analysis.
+   * 
+   * Format:
+   * - Plain text format
+   * - Clear speaker identification
+   * - Chronological order
+   * - Timestamped filename
+   * 
+   * Enhancement Opportunities:
+   * - Add PDF export option
+   * - Include conversation metadata
+   * - Support for different export formats
+   * - Email sharing functionality
+   */
   const exportConversation = () => {
+    // Format conversation as readable text
     const conversationText = messages
       .map(msg => `${msg.type === 'user' ? 'You' : 'AI Assistant'}: ${msg.content}`)
       .join('\n\n');
     
+    // Create and download file
     const blob = new Blob([conversationText], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -133,6 +298,23 @@ export default function AIAssistant() {
     URL.revokeObjectURL(url);
   };
 
+  /**
+   * Handle Keyboard Input
+   * 
+   * Provides keyboard shortcuts for better user experience.
+   * Enter sends message, Shift+Enter creates new line.
+   * 
+   * @param e - Keyboard event
+   * 
+   * Shortcuts:
+   * - Enter: Send message
+   * - Shift+Enter: New line in textarea
+   * 
+   * Accessibility:
+   * - Prevents default form submission
+   * - Maintains textarea functionality
+   * - Clear user feedback
+   */
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
@@ -140,11 +322,35 @@ export default function AIAssistant() {
     }
   };
 
+  /**
+   * Component Render
+   * 
+   * Renders the complete AI assistant interface with mobile-first design.
+   * 
+   * Layout Structure:
+   * 1. Header with title and action buttons
+   * 2. Error banner (conditional)
+   * 3. Messages container with scrolling
+   * 4. Input area with send button
+   * 
+   * Mobile-First Design:
+   * - Base styles for mobile (text-sm, p-3, etc.)
+   * - Enhanced with sm: breakpoints for larger screens
+   * - Touch-friendly button sizes
+   * - Responsive typography and spacing
+   * 
+   * Accessibility:
+   * - Proper ARIA labels
+   * - Keyboard navigation support
+   * - Screen reader friendly
+   * - High contrast colors
+   */
   return (
     <div className="h-full flex flex-col bg-gray-50">
-      {/* Header */}
+      {/* Header Section - App title and action buttons */}
       <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center justify-between">
+          {/* App branding and title */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 sm:w-10 sm:h-10 bg-blue-100 rounded-full flex items-center justify-center">
               <Bot className="h-4 w-4 sm:h-6 sm:w-6 text-blue-600" />
@@ -154,7 +360,10 @@ export default function AIAssistant() {
               <p className="text-xs text-gray-500 sm:text-sm">Powered by OpenRouter AI</p>
             </div>
           </div>
+          
+          {/* Action buttons - Export and Clear */}
           <div className="flex items-center space-x-1 sm:space-x-2">
+            {/* Export conversation button */}
             <button
               onClick={exportConversation}
               className="px-2 py-2 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors sm:px-3 sm:text-sm"
@@ -162,6 +371,8 @@ export default function AIAssistant() {
               <Download className="h-4 w-4 sm:mr-2 inline" />
               <span className="hidden sm:inline">Export</span>
             </button>
+            
+            {/* Clear conversation button */}
             <button
               onClick={clearConversation}
               className="px-2 py-2 text-xs font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 transition-colors sm:px-3 sm:text-sm"
@@ -173,7 +384,7 @@ export default function AIAssistant() {
         </div>
       </div>
 
-      {/* Error Banner */}
+      {/* Error Banner - Shows API or connection errors */}
       {error && (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3">
           <div className="flex items-center space-x-2">
@@ -183,14 +394,16 @@ export default function AIAssistant() {
         </div>
       )}
 
-      {/* Messages */}
+      {/* Messages Container - Scrollable conversation area */}
       <div className="flex-1 overflow-auto p-3 space-y-4 sm:p-6">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
+            {/* Message bubble with avatar and content */}
             <div className={`flex space-x-2 max-w-full sm:space-x-3 sm:max-w-3xl ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+              {/* Avatar */}
               <div className={`w-6 h-6 rounded-full flex items-center justify-center sm:w-8 sm:h-8 ${
                 message.type === 'user' ? 'bg-blue-600' : 'bg-gray-200'
               }`}>
@@ -200,18 +413,25 @@ export default function AIAssistant() {
                   <Bot className="h-3 w-3 text-gray-600 sm:h-5 sm:w-5" />
                 )}
               </div>
+              
+              {/* Message content bubble */}
               <div className={`flex-1 px-3 py-2 rounded-lg sm:px-4 sm:py-3 ${
                 message.type === 'user'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white border border-gray-200'
               }`}>
+                {/* Message text with proper formatting */}
                 <p className="text-sm leading-relaxed whitespace-pre-wrap">{message.content}</p>
+                
+                {/* Message metadata - timestamp and bookmark */}
                 <div className="flex items-center justify-between mt-2">
                   <p className={`text-xs ${
                     message.type === 'user' ? 'text-blue-100' : 'text-gray-500'
                   }`}>
                     {message.timestamp.toLocaleTimeString()}
                   </p>
+                  
+                  {/* Bookmark button for assistant messages */}
                   {message.type === 'assistant' && (
                     <button
                       onClick={() => toggleBookmark(message.id)}
@@ -230,6 +450,7 @@ export default function AIAssistant() {
           </div>
         ))}
         
+        {/* Loading indicator while AI is responding */}
         {isLoading && (
           <div className="flex justify-start">
             <div className="flex space-x-2 max-w-full sm:space-x-3 sm:max-w-3xl">
@@ -245,12 +466,15 @@ export default function AIAssistant() {
             </div>
           </div>
         )}
+        
+        {/* Invisible element for auto-scrolling */}
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input */}
+      {/* Input Section - Message composition area */}
       <div className="bg-white border-t border-gray-200 p-3 sm:p-6">
         <div className="flex space-x-2 sm:space-x-4">
+          {/* Auto-resizing textarea for user input */}
           <textarea
             value={input}
             onChange={(e) => setInput(e.target.value)}
@@ -259,12 +483,15 @@ export default function AIAssistant() {
             className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none sm:px-4 sm:py-3 sm:text-base"
             rows={1}
             style={{ minHeight: '40px', maxHeight: '120px' }}
+            // Auto-resize functionality
             onInput={(e) => {
               const target = e.target as HTMLTextAreaElement;
               target.style.height = 'auto';
               target.style.height = Math.min(target.scrollHeight, 120) + 'px';
             }}
           />
+          
+          {/* Send button with loading state */}
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
@@ -277,6 +504,8 @@ export default function AIAssistant() {
             )}
           </button>
         </div>
+        
+        {/* Usage instructions */}
         <p className="text-xs text-gray-500 mt-2 text-center">
           Press Enter to send, Shift+Enter for new line
         </p>

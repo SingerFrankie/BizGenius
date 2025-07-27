@@ -1,14 +1,67 @@
-// OpenRouter API Integration for Business Assistant
+/**
+ * OpenRouter API Integration for AI Business Assistant
+ * 
+ * This module provides a comprehensive interface to OpenRouter's API for business consulting.
+ * It handles chat completions, streaming responses, and model management with proper error handling.
+ * 
+ * Key Features:
+ * - Business-specialized AI assistant with expert system prompt
+ * - Real-time chat completions with context management
+ * - Streaming responses for better user experience
+ * - Comprehensive error handling for different API scenarios
+ * - Model switching capabilities
+ * - Response formatting for human readability
+ * 
+ * Usage:
+ * - Import businessAssistant instance for immediate use
+ * - Call getChatCompletion() for standard responses
+ * - Use getStreamingResponse() for real-time streaming
+ * 
+ * @author BizGenius Team
+ * @version 1.0.0
+ */
+
+/**
+ * Interface defining the structure of chat messages
+ * Used for maintaining conversation context and API communication
+ */
 interface ChatMessage {
   role: 'user' | 'assistant' | 'system';
   content: string;
 }
 
+/**
+ * BusinessAssistant Class
+ * 
+ * Main class for handling AI business consulting through OpenRouter API.
+ * Provides methods for chat completions, streaming, and model management.
+ * 
+ * Architecture:
+ * - Singleton pattern for consistent API usage
+ * - Configurable model selection
+ * - Built-in response formatting
+ * - Comprehensive error handling
+ */
 export class BusinessAssistant {
+  // OpenRouter API configuration
   private apiKey: string;
   private baseUrl = 'https://openrouter.ai/api/v1';
-  private model = 'tngtech/deepseek-r1t2-chimera:free'; // Free model for cost-effective usage
+  private model = 'tngtech/deepseek-r1t2-chimera:free'; // Free DeepSeek model - excellent for business advice
 
+  /**
+   * System prompt that defines the AI's expertise and behavior
+   * 
+   * This prompt is crucial for:
+   * - Setting the AI's role as a business expert
+   * - Defining areas of expertise
+   * - Ensuring consistent response quality
+   * - Maintaining professional tone
+   * 
+   * Modification Guide:
+   * - Update expertise areas as needed
+   * - Adjust tone and style requirements
+   * - Add industry-specific knowledge
+   */
   private systemPrompt = `You are an expert AI Business Assistant specializing in helping entrepreneurs, startups, and business owners. Your expertise includes:
 
 - Marketing strategies and digital marketing
@@ -30,6 +83,12 @@ Provide practical, actionable advice that is:
 
 Keep responses concise but comprehensive and tailored to users context. Write in professional, conversational language using proper paragraphs and line breaks for readability. Do not use any formatting symbols, asterisks, or markdown. Ask clarifying questions when needed to provide better advice.`;
 
+  /**
+   * Constructor - Initializes the BusinessAssistant with API configuration
+   * 
+   * Automatically retrieves API key from environment variables
+   * Provides warning if API key is not properly configured
+   */
   constructor() {
     this.apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
     
@@ -38,35 +97,58 @@ Keep responses concise but comprehensive and tailored to users context. Write in
     }
   }
 
+  /**
+   * Get Chat Completion from OpenRouter API
+   * 
+   * Main method for getting AI responses to business questions.
+   * Handles the complete request/response cycle with proper error handling.
+   * 
+   * @param messages - Array of chat messages for context
+   * @returns Promise<string> - Formatted AI response
+   * 
+   * Error Handling:
+   * - 401: Invalid API key
+   * - 402: Insufficient credits
+   * - 429: Rate limit exceeded
+   * - Network errors and timeouts
+   * 
+   * Usage Example:
+   * const response = await businessAssistant.getChatCompletion([
+   *   { role: 'user', content: 'How do I create a marketing strategy?' }
+   * ]);
+   */
   async getChatCompletion(messages: ChatMessage[]): Promise<string> {
+    // Validate API key configuration
     if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') {
       throw new Error('OpenRouter API key not configured. Please add your API key to the .env file.');
     }
 
     try {
-      // Add system prompt as the first message if not present
+      // Prepare messages with system prompt for consistent AI behavior
       const messagesWithSystem = [
         { role: 'system' as const, content: this.systemPrompt },
         ...messages
       ];
 
+      // Make API request to OpenRouter
       const response = await fetch(`${this.baseUrl}/chat/completions`, {
         method: 'POST',
         headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
+          'Authorization': `Bearer ${this.apiKey}`, // API authentication
           'Content-Type': 'application/json',
-          'HTTP-Referer': window.location.origin,
-          'X-Title': 'BizGenius AI Assistant'
+          'HTTP-Referer': window.location.origin, // Required by OpenRouter
+          'X-Title': 'BizGenius AI Assistant' // App identification
         },
         body: JSON.stringify({
-          model: this.model,
+          model: this.model, // DeepSeek model for free usage
           messages: messagesWithSystem,
-          max_tokens: 1000,
-          temperature: 0.7,
-          stream: false,
+          max_tokens: 1000, // Reasonable response length
+          temperature: 0.7, // Balanced creativity vs consistency
+          stream: false, // Standard completion mode
         })
       });
 
+      // Handle different types of API errors with specific messages
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
         
@@ -81,10 +163,11 @@ Keep responses concise but comprehensive and tailored to users context. Write in
         }
       }
 
+      // Extract and format the AI response
       const data = await response.json();
       const rawContent = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
       
-      // Clean up the response to make it human-readable
+      // Format response for human readability (remove markdown, etc.)
       return this.formatResponse(rawContent);
     } catch (error) {
       console.error('OpenRouter API Error:', error);
@@ -97,6 +180,22 @@ Keep responses concise but comprehensive and tailored to users context. Write in
     }
   }
 
+  /**
+   * Format AI Response for Human Readability
+   * 
+   * Cleans up AI responses by removing markdown formatting and normalizing text.
+   * This ensures consistent, professional presentation in the UI.
+   * 
+   * @param content - Raw AI response content
+   * @returns string - Cleaned, formatted content
+   * 
+   * Transformations:
+   * - Removes bold markdown (**text**)
+   * - Removes asterisks and formatting symbols
+   * - Normalizes bullet points
+   * - Cleans up excessive line breaks
+   * - Removes leading whitespace
+   */
   private formatResponse(content: string): string {
     return content
       .replace(/\*\*/g, '') // Remove bold markdown
@@ -108,6 +207,19 @@ Keep responses concise but comprehensive and tailored to users context. Write in
       .trim();
   }
 
+  /**
+   * Get Streaming Response (Advanced Feature)
+   * 
+   * Provides real-time streaming of AI responses for better user experience.
+   * Useful for long responses or when you want to show progress.
+   * 
+   * @param messages - Array of chat messages for context
+   * @returns Promise<ReadableStream> - Stream of response chunks
+   * 
+   * Usage Example:
+   * const stream = await businessAssistant.getStreamingResponse(messages);
+   * // Process stream chunks as they arrive
+   */
   async getStreamingResponse(messages: ChatMessage[]): Promise<ReadableStream> {
     if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') {
       throw new Error('OpenRouter API key not configured. Please add your API key to the .env file.');
@@ -132,7 +244,7 @@ Keep responses concise but comprehensive and tailored to users context. Write in
           messages: messagesWithSystem,
           max_tokens: 1000,
           temperature: 0.7,
-          stream: true,
+          stream: true, // Enable streaming mode
         })
       });
 
@@ -140,6 +252,7 @@ Keep responses concise but comprehensive and tailored to users context. Write in
         throw new Error(`API request failed with status ${response.status}`);
       }
 
+      // Create ReadableStream for processing streaming data
       return new ReadableStream({
         async start(controller) {
           const reader = response.body?.getReader();
@@ -153,6 +266,7 @@ Keep responses concise but comprehensive and tailored to users context. Write in
               const { done, value } = await reader.read();
               if (done) break;
 
+              // Process streaming chunks and extract content
               const chunk = new TextDecoder().decode(value);
               const lines = chunk.split('\n');
 
@@ -171,7 +285,7 @@ Keep responses concise but comprehensive and tailored to users context. Write in
                       controller.enqueue(content);
                     }
                   } catch (e) {
-                    // Skip invalid JSON
+                    // Skip invalid JSON chunks (normal in streaming)
                   }
                 }
               }
@@ -188,7 +302,14 @@ Keep responses concise but comprehensive and tailored to users context. Write in
     }
   }
 
-  // Get available models
+  /**
+   * Get Available Models from OpenRouter
+   * 
+   * Retrieves list of available AI models for potential switching.
+   * Useful for implementing model selection features.
+   * 
+   * @returns Promise<any[]> - Array of available models
+   */
   async getAvailableModels(): Promise<any[]> {
     try {
       const response = await fetch(`${this.baseUrl}/models`, {
@@ -209,15 +330,51 @@ Keep responses concise but comprehensive and tailored to users context. Write in
     }
   }
 
-  // Change model
+  /**
+   * Set AI Model
+   * 
+   * Allows switching between different AI models available on OpenRouter.
+   * 
+   * @param model - Model identifier (e.g., 'anthropic/claude-3.5-sonnet')
+   * 
+   * Popular Models:
+   * - 'tngtech/deepseek-r1t2-chimera:free' (Free, good for business)
+   * - 'anthropic/claude-3.5-sonnet' (Excellent reasoning)
+   * - 'openai/gpt-4' (OpenAI's flagship)
+   * - 'openai/gpt-3.5-turbo' (Fast and efficient)
+   */
   setModel(model: string) {
     this.model = model;
   }
 
+  /**
+   * Get Current Model
+   * 
+   * Returns the currently selected AI model identifier.
+   * 
+   * @returns string - Current model identifier
+   */
   getCurrentModel(): string {
     return this.model;
   }
 }
 
+/**
+ * Singleton Instance Export
+ * 
+ * Pre-configured BusinessAssistant instance ready for immediate use.
+ * This singleton pattern ensures consistent configuration across the app.
+ * 
+ * Usage:
+ * import { businessAssistant } from './lib/openai';
+ * const response = await businessAssistant.getChatCompletion(messages);
+ */
 export const businessAssistant = new BusinessAssistant();
+
+/**
+ * Type Export for TypeScript Support
+ * 
+ * Exports the ChatMessage interface for type safety in components.
+ * Use this when defining message arrays or function parameters.
+ */
 export type { ChatMessage };
