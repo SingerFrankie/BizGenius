@@ -369,6 +369,64 @@ export class DatabaseService {
     }
   }
 
+  // ==================== PROFILE METHODS ====================
+
+  /**
+   * Update user profile
+   */
+  async updateProfile(updates: {
+    full_name?: string;
+    first_name?: string;
+    last_name?: string;
+    avatar_url?: string;
+    phone?: string;
+    location?: string;
+    company?: string;
+    position?: string;
+    bio?: string;
+    website?: string;
+    linkedin_url?: string;
+    twitter_url?: string;
+  }): Promise<any> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .update(updates)
+        .eq('id', user.id)
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error updating profile:', error);
+      throw new Error('Failed to update profile');
+    }
+  }
+
+  /**
+   * Get user profile
+   */
+  async getProfile(): Promise<any> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('id', user.id)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching profile:', error);
+      throw new Error('Failed to fetch profile');
+    }
+  }
+
   /**
    * Toggle favorite status of business plan
    */
