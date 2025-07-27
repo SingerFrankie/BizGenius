@@ -1,7 +1,96 @@
-import { createClient } from '@supabase/supabase-js'
+import { createClient } from '@supabase/supabase-js';
 
-// These would normally come from environment variables
-const supabaseUrl = 'https://your-project.supabase.co'
-const supabaseAnonKey = 'your-anon-key'
+// Supabase configuration from environment variables
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
+const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
 
-export const supabase = createClient(supabaseUrl, supabaseAnonKey)
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
+/**
+ * Authentication Helper Functions
+ * 
+ * These functions provide a clean interface for authentication operations
+ * with proper error handling and JWT token management.
+ */
+
+/**
+ * Sign up a new user with email and password
+ * @param email - User's email address
+ * @param password - User's password
+ * @returns Promise with user data or error
+ */
+export const signUp = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+/**
+ * Sign in an existing user with email and password
+ * @param email - User's email address
+ * @param password - User's password
+ * @returns Promise with user data or error
+ */
+export const signIn = async (email: string, password: string) => {
+  try {
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    
+    if (error) throw error;
+    return { data, error: null };
+  } catch (error) {
+    return { data: null, error };
+  }
+};
+
+/**
+ * Sign out the current user
+ * @returns Promise with success or error
+ */
+export const signOut = async () => {
+  try {
+    const { error } = await supabase.auth.signOut();
+    if (error) throw error;
+    return { error: null };
+  } catch (error) {
+    return { error };
+  }
+};
+
+/**
+ * Get the current user session
+ * @returns Promise with session data
+ */
+export const getCurrentSession = async () => {
+  try {
+    const { data: { session }, error } = await supabase.auth.getSession();
+    if (error) throw error;
+    return { session, error: null };
+  } catch (error) {
+    return { session: null, error };
+  }
+};
+
+/**
+ * Get the current user
+ * @returns Promise with user data
+ */
+export const getCurrentUser = async () => {
+  try {
+    const { data: { user }, error } = await supabase.auth.getUser();
+    if (error) throw error;
+    return { user, error: null };
+  } catch (error) {
+    return { user: null, error };
+  }
+};
