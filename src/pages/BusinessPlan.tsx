@@ -1002,25 +1002,22 @@ export default function BusinessPlan() {
 
       {/* Plans grid or empty state */}
       {plans.length > 0 ? (
-        {/* Plans grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+        <>
+          {/* Plans grid */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
           {plans.map((plan) => (
-            {/* Individual plan card */}
             <div key={plan.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
               <div className="p-4 sm:p-6">
-                {/* Plan header with title and status */}
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
                     <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{plan.title}</h3>
                     <p className="text-sm text-gray-600">{plan.industry}</p>
                   </div>
-                  {/* Status badge */}
                   <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
                     {plan.status}
                   </span>
                 </div>
                 
-                {/* Plan metadata */}
                 <p className="text-sm text-gray-500 mb-4">
                   Created: {plan.createdAt.toLocaleDateString()}
                 </p>
@@ -1028,9 +1025,7 @@ export default function BusinessPlan() {
                   {plan.sections.length} sections
                 </p>
 
-                {/* Plan action buttons */}
                 <div className="flex items-center space-x-2">
-                  {/* View plan button */}
                   <button 
                     onClick={() => setShowPlanView(plan)}
                     className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
@@ -1039,7 +1034,6 @@ export default function BusinessPlan() {
                     <span className="hidden sm:inline">View</span>
                   </button>
                   
-                  {/* Edit plan button */}
                   <button 
                     onClick={() => handleEditPlan(plan)}
                     className="flex-1 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors flex items-center justify-center"
@@ -1048,12 +1042,10 @@ export default function BusinessPlan() {
                     <span className="hidden sm:inline">Edit</span>
                   </button>
                   
-                  {/* Export dropdown menu */}
                   <div className="relative group">
                     <button className="px-3 py-2 text-sm font-medium text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 transition-colors">
                       <Download className="h-4 w-4" />
                     </button>
-                    {/* Dropdown menu for export options */}
                     <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                       <button
                         onClick={() => exportPlan(plan, 'pdf')}
@@ -1070,7 +1062,6 @@ export default function BusinessPlan() {
                     </div>
                   </div>
                   
-                  {/* Delete plan button */}
                   <button
                     onClick={() => deletePlan(plan.id)}
                     className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
@@ -1081,14 +1072,13 @@ export default function BusinessPlan() {
               </div>
             </div>
           ))}
-        </div>
+          </div>
+        </>
       ) : (
-        {/* Empty state - No plans yet */}
         <div className="text-center py-12">
           <FileText className="h-12 w-12 text-gray-400 mx-auto mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No business plans yet</h3>
           <p className="text-gray-600 mb-6">Create your first AI-powered business plan to get started</p>
-          {/* Call-to-action button */}
           <button
             onClick={() => setShowGenerator(true)}
             className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
