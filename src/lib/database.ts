@@ -528,6 +528,233 @@ export class DatabaseService {
       throw new Error('Failed to fetch favorite business plans');
     }
   }
+
+  // ==================== COURSES METHODS ====================
+
+  /**
+   * Get all published courses
+   */
+  async getCourses(): Promise<CourseRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      throw new Error('Failed to fetch courses');
+    }
+  }
+
+  /**
+   * Get courses by category
+   */
+  async getCoursesByCategory(category: string): Promise<CourseRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .eq('category', category)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching courses by category:', error);
+      throw new Error('Failed to fetch courses by category');
+    }
+  }
+
+  /**
+   * Get courses by level
+   */
+  async getCoursesByLevel(level: 'beginner' | 'intermediate' | 'advanced'): Promise<CourseRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .eq('level', level)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching courses by level:', error);
+      throw new Error('Failed to fetch courses by level');
+    }
+  }
+
+  /**
+   * Get featured courses
+   */
+  async getFeaturedCourses(): Promise<CourseRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .eq('is_featured', true)
+        .order('rating', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching featured courses:', error);
+      throw new Error('Failed to fetch featured courses');
+    }
+  }
+
+  /**
+   * Get single course by ID
+   */
+  async getCourse(courseId: string): Promise<CourseRecord> {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('id', courseId)
+        .eq('is_published', true)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching course:', error);
+      throw new Error('Failed to fetch course');
+    }
+  }
+
+  // ==================== LESSONS METHODS ====================
+
+  /**
+   * Get lessons for a course
+   */
+  async getLessonsByCourse(courseId: string): Promise<LessonRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('course_id', courseId)
+        .eq('is_published', true)
+        .order('order', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching lessons:', error);
+      throw new Error('Failed to fetch lessons');
+    }
+  }
+
+  /**
+   * Get preview lessons (free lessons)
+   */
+  async getPreviewLessons(): Promise<LessonRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('is_published', true)
+        .eq('is_preview', true)
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching preview lessons:', error);
+      throw new Error('Failed to fetch preview lessons');
+    }
+  }
+
+  /**
+   * Get single lesson by ID
+   */
+  async getLesson(lessonId: string): Promise<LessonRecord> {
+    try {
+      const { data, error } = await supabase
+        .from('lessons')
+        .select('*')
+        .eq('id', lessonId)
+        .eq('is_published', true)
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error fetching lesson:', error);
+      throw new Error('Failed to fetch lesson');
+    }
+  }
+
+  /**
+   * Search courses by title or description
+   */
+  async searchCourses(query: string): Promise<CourseRecord[]> {
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*')
+        .eq('is_published', true)
+        .textSearch('title', query)
+        .order('rating', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error searching courses:', error);
+      throw new Error('Failed to search courses');
+    }
+  }
+}
+
+/**
+ * Course Interfaces
+ */
+export interface CourseRecord {
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  level: 'beginner' | 'intermediate' | 'advanced';
+  thumbnail_url: string;
+  duration: string;
+  rating: number;
+  students_count: number;
+  instructor_name: string;
+  instructor_bio: string;
+  course_content: any[];
+  tags: string[];
+  price: number;
+  is_featured: boolean;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+/**
+ * Lesson Interfaces
+ */
+export interface LessonRecord {
+  id: string;
+  course_id: string;
+  title: string;
+  video_url: string;
+  transcript: string;
+  order: number;
+  duration: string;
+  description: string;
+  resources: any[];
+  quiz_questions: any[];
+  is_preview: boolean;
+  is_published: boolean;
+  created_at: string;
+  updated_at: string;
 }
 
 /**
@@ -541,4 +768,11 @@ export const databaseService = new DatabaseService();
 /**
  * Type Exports for TypeScript Support
  */
-export type { ChatHistoryRecord, CreateChatHistoryInput, BusinessPlanRecord, CreateBusinessPlanInput };
+export type { 
+  ChatHistoryRecord, 
+  CreateChatHistoryInput, 
+  BusinessPlanRecord, 
+  CreateBusinessPlanInput,
+  CourseRecord,
+  LessonRecord
+};

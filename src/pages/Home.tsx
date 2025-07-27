@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useProgress } from '../contexts/ProgressContext';
+import { databaseService, type CourseRecord } from '../lib/database';
 import { 
   MessageSquare, 
   FileText, 
@@ -9,11 +10,33 @@ import {
   Award,
   Clock,
   Target,
-  Zap
+  Zap,
+  Star
 } from 'lucide-react';
 
 export default function Home() {
   const { progress } = useProgress();
+  const [featuredCourses, setFeaturedCourses] = useState<CourseRecord[]>([]);
+  const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+
+  /**
+   * Load featured courses from database
+   */
+  useEffect(() => {
+    const loadFeaturedCourses = async () => {
+      try {
+        setIsLoadingCourses(true);
+        const courses = await databaseService.getFeaturedCourses();
+        setFeaturedCourses(courses.slice(0, 3)); // Show only 3 featured courses
+      } catch (error) {
+        console.error('Error loading featured courses:', error);
+      } finally {
+        setIsLoadingCourses(false);
+      }
+    };
+
+    loadFeaturedCourses();
+  }, []);
 
   const quickActions = [
     {
@@ -167,6 +190,57 @@ export default function Home() {
             ))}
           </div>
         </div>
+      </div>
+
+      {/* Featured Courses */}
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+        <div className="flex items-center justify-between mb-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900">Featured Courses</h3>
+          <Link 
+            to="/learning" 
+            className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+          >
+            View All →
+          </Link>
+        </div>
+        
+        {isLoadingCourses ? (
+          <div className="flex items-center justify-center py-8">
+            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {featuredCourses.map((course) => (
+              <Link
+                key={course.id}
+                to="/learning"
+                className="group p-4 border border-gray-200 rounded-lg hover:border-gray-300 hover:shadow-sm transition-all"
+              >
+                <img
+                  src={course.thumbnail_url}
+                  alt={course.title}
+                  className="w-full h-32 object-cover rounded-md mb-3"
+                />
+                <h4 className="text-sm font-medium text-gray-900 mb-1 group-hover:text-blue-600 transition-colors">
+                  {course.title}
+                </h4>
+                <p className="text-xs text-gray-600 mb-2 line-clamp-2">
+                  {course.description}
+                </p>
+                <div className="flex items-center justify-between text-xs text-gray-500">
+                  <div className="flex items-center space-x-1">
+                    <Clock className="h-3 w-3" />
+                    <span>{course.duration}</span>
+                  </div>
+                  <div className="flex items-center space-x-1">
+                    <Star className="h-3 w-3 text-amber-500" />
+                    <span>{course.rating}</span>
+                  </div>
+                </div>
+              </Link>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

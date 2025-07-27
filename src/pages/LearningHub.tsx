@@ -1,16 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Play, BookOpen, Clock, Star, Bookmark, CheckCircle, Filter } from 'lucide-react';
+import { databaseService, type CourseRecord } from '../lib/database';
 
-interface Course {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  level: 'Beginner' | 'Intermediate' | 'Advanced';
-  category: string;
-  rating: number;
-  students: number;
-  thumbnail: string;
+// Extended interface for UI state
+interface CourseWithProgress extends CourseRecord {
   completed: boolean;
   bookmarked: boolean;
   progress: number;
@@ -19,96 +12,43 @@ interface Course {
 export default function LearningHub() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [selectedLevel, setSelectedLevel] = useState('All');
+  const [courses, setCourses] = useState<CourseWithProgress[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const categories = ['All', 'Marketing', 'Finance', 'Operations', 'Strategy', 'Leadership'];
-  const levels = ['All', 'Beginner', 'Intermediate', 'Advanced'];
+  const levels = ['All', 'beginner', 'intermediate', 'advanced'];
 
-  const [courses] = useState<Course[]>([
-    {
-      id: '1',
-      title: 'Digital Marketing Fundamentals',
-      description: 'Learn the basics of digital marketing including SEO, social media, and content marketing',
-      duration: '4h 30m',
-      level: 'Beginner',
-      category: 'Marketing',
-      rating: 4.8,
-      students: 1250,
-      thumbnail: 'https://images.pexels.com/photos/265087/pexels-photo-265087.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-      completed: true,
-      bookmarked: false,
-      progress: 100
-    },
-    {
-      id: '2',
-      title: 'Financial Planning for Startups',
-      description: 'Master financial forecasting, budgeting, and funding strategies for new businesses',
-      duration: '6h 15m',
-      level: 'Intermediate',
-      category: 'Finance',
-      rating: 4.9,
-      students: 890,
-      thumbnail: 'https://images.pexels.com/photos/95916/pexels-photo-95916.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-      completed: false,
-      bookmarked: true,
-      progress: 65
-    },
-    {
-      id: '3',
-      title: 'Operations Management Excellence',
-      description: 'Optimize your business operations with lean methodologies and process improvement',
-      duration: '5h 45m',
-      level: 'Advanced',
-      category: 'Operations',
-      rating: 4.7,
-      students: 634,
-      thumbnail: 'https://images.pexels.com/photos/416405/pexels-photo-416405.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-      completed: false,
-      bookmarked: false,
-      progress: 0
-    },
-    {
-      id: '4',
-      title: 'Strategic Business Planning',
-      description: 'Develop comprehensive business strategies and competitive analysis skills',
-      duration: '7h 20m',
-      level: 'Intermediate',
-      category: 'Strategy',
-      rating: 4.8,
-      students: 1120,
-      thumbnail: 'https://images.pexels.com/photos/3184291/pexels-photo-3184291.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-      completed: false,
-      bookmarked: true,
-      progress: 25
-    },
-    {
-      id: '5',
-      title: 'Leadership and Team Management',
-      description: 'Build effective leadership skills and learn to manage high-performing teams',
-      duration: '4h 10m',
-      level: 'Beginner',
-      category: 'Leadership',
-      rating: 4.6,
-      students: 987,
-      thumbnail: 'https://images.pexels.com/photos/3184465/pexels-photo-3184465.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-      completed: false,
-      bookmarked: false,
-      progress: 0
-    },
-    {
-      id: '6',
-      title: 'Advanced Financial Analysis',
-      description: 'Deep dive into financial modeling, valuation, and investment analysis',
-      duration: '8h 30m',
-      level: 'Advanced',
-      category: 'Finance',
-      rating: 4.9,
-      students: 456,
-      thumbnail: 'https://images.pexels.com/photos/159888/pexels-photo-159888.jpeg?auto=compress&cs=tinysrgb&w=300&h=200',
-      completed: false,
-      bookmarked: false,
-      progress: 0
-    }
-  ]);
+  /**
+   * Load courses from database
+   */
+  useEffect(() => {
+    const loadCourses = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const coursesData = await databaseService.getCourses();
+        
+        // Add UI state to database courses
+        const coursesWithProgress: CourseWithProgress[] = coursesData.map(course => ({
+          ...course,
+          completed: Math.random() > 0.7, // Simulate some completed courses
+          bookmarked: Math.random() > 0.8, // Simulate some bookmarked courses
+          progress: Math.random() > 0.5 ? Math.floor(Math.random() * 100) : 0 // Simulate progress
+        }));
+        
+        setCourses(coursesWithProgress);
+      } catch (error) {
+        console.error('Error loading courses:', error);
+        setError('Failed to load courses. Please try again.');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadCourses();
+  }, []);
 
   const filteredCourses = courses.filter(course => {
     const categoryMatch = selectedCategory === 'All' || course.category === selectedCategory;
@@ -119,6 +59,11 @@ export default function LearningHub() {
   const toggleBookmark = (courseId: string) => {
     // In a real app, this would update the backend
     console.log(`Toggling bookmark for course ${courseId}`);
+  };
+
+  // Capitalize level for display
+  const formatLevel = (level: string) => {
+    return level.charAt(0).toUpperCase() + level.slice(1);
   };
 
   return (
@@ -167,8 +112,26 @@ export default function LearningHub() {
         </div>
       </div>
 
+      {/* Loading State */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-600">Loading courses...</p>
+          </div>
+        </div>
+      )}
+
+      {/* Error State */}
+      {error && (
+        <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <p className="text-sm text-red-700">{error}</p>
+        </div>
+      )}
+
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-8">
+      {!isLoading && !error && (
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-8">
         <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-500" />
@@ -204,23 +167,25 @@ export default function LearningHub() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Courses Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      {!isLoading && !error && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredCourses.map((course) => (
           <div key={course.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
             <div className="relative">
               <img
-                src={course.thumbnail}
+                src={course.thumbnail_url}
                 alt={course.title}
                 className="w-full h-48 object-cover"
               />
               <div className="absolute top-3 left-3">
                 <span className={`px-2 py-1 text-xs font-medium rounded-full text-white ${
-                  course.level === 'Beginner' ? 'bg-green-500' :
-                  course.level === 'Intermediate' ? 'bg-yellow-500' : 'bg-red-500'
+                  course.level === 'beginner' ? 'bg-green-500' :
+                  course.level === 'intermediate' ? 'bg-yellow-500' : 'bg-red-500'
                 }`}>
-                  {course.level}
+                  {formatLevel(course.level)}
                 </span>
               </div>
               <div className="absolute top-3 right-3">
@@ -266,7 +231,7 @@ export default function LearningHub() {
                 </div>
                 <div className="flex items-center space-x-1">
                   <BookOpen className="h-4 w-4" />
-                  <span>{course.students}</span>
+                  <span>{course.students_count}</span>
                 </div>
               </div>
               
@@ -278,6 +243,16 @@ export default function LearningHub() {
           </div>
         ))}
       </div>
+      )}
+
+      {/* Empty State */}
+      {!isLoading && !error && filteredCourses.length === 0 && (
+        <div className="text-center py-12">
+          <BookOpen className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No courses found</h3>
+          <p className="text-gray-600">Try adjusting your filters to see more courses.</p>
+        </div>
+      )}
     </div>
   );
 }
