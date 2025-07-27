@@ -26,7 +26,7 @@ Provide practical, actionable advice that is:
 - Based on current best practices
 - Focused on real-world implementation
 
-Keep responses concise but comprehensive. Ask clarifying questions when needed to provide better advice.`;
+Keep responses concise but comprehensive and tailored too users context. Ask clarifying questions when needed to provide better advice.`;
 
   constructor() {
     this.apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
