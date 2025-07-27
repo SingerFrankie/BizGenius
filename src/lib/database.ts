@@ -1180,28 +1180,48 @@ export class DatabaseService {
     try {
       const user = await this.getCurrentUser();
       
-      const { data, error } = await supabase
+      // First, get all lesson bookmarks
+      const { data: bookmarks, error: bookmarksError } = await supabase
         .from('bookmarks')
-        .select(`
-          *,
-          lessons!inner(
-            id,
-            title,
-            description,
-            duration,
-            course_id,
-            courses!inner(
-              title,
-              category
-            )
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .eq('type', 'lesson')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data || [];
+      if (bookmarksError) throw bookmarksError;
+      if (!bookmarks || bookmarks.length === 0) return [];
+
+      // Get lesson IDs from bookmarks
+      const lessonIds = bookmarks.map(bookmark => bookmark.related_id);
+
+      // Fetch lesson details with course information
+      const { data: lessons, error: lessonsError } = await supabase
+        .from('lessons')
+        .select(`
+          id,
+          title,
+          description,
+          duration,
+          course_id,
+          courses!inner(
+            title,
+            category
+          )
+        `)
+        .in('id', lessonIds);
+
+      if (lessonsError) throw lessonsError;
+
+      // Combine bookmarks with lesson details
+      const result = bookmarks.map(bookmark => {
+        const lesson = lessons?.find(l => l.id === bookmark.related_id);
+        return {
+          ...bookmark,
+          lessons: lesson || null
+        };
+      }).filter(item => item.lessons !== null);
+
+      return result;
     } catch (error) {
       console.error('Error fetching bookmarked lessons:', error);
       throw new Error('Failed to fetch bookmarked lessons');
@@ -1215,23 +1235,43 @@ export class DatabaseService {
     try {
       const user = await this.getCurrentUser();
       
-      const { data, error } = await supabase
+      // First, get all chat bookmarks
+      const { data: bookmarks, error: bookmarksError } = await supabase
         .from('bookmarks')
-        .select(`
-          *,
-          chat_history!inner(
-            id,
-            question,
-            answer,
-            created_at
-          )
-        `)
+        .select('*')
         .eq('user_id', user.id)
         .eq('type', 'chat')
         .order('created_at', { ascending: false });
 
-      if (error) throw error;
-      return data || [];
+      if (bookmarksError) throw bookmarksError;
+      if (!bookmarks || bookmarks.length === 0) return [];
+
+      // Get chat IDs from bookmarks
+      const chatIds = bookmarks.map(bookmark => bookmark.related_id);
+
+      // Fetch chat history details
+      const { data: chats, error: chatsError } = await supabase
+        .from('chat_history')
+        .select(`
+          id,
+          question,
+          answer,
+          created_at
+        `)
+        .in('id', chatIds);
+
+      if (chatsError) throw chatsError;
+
+      // Combine bookmarks with chat details
+      const result = bookmarks.map(bookmark => {
+        const chat = chats?.find(c => c.id === bookmark.related_id);
+        return {
+          ...bookmark,
+          chat_history: chat || null
+        };
+      }).filter(item => item.chat_history !== null);
+
+      return result;
     } catch (error) {
       console.error('Error fetching bookmarked chats:', error);
       throw new Error('Failed to fetch bookmarked chats');
