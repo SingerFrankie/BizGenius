@@ -38,7 +38,7 @@
  * @author BizGenius Team
  * @version 1.0.0
  */
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { FileText, Download, Plus, Eye, Edit, Trash2, Loader2, AlertCircle, MessageSquare } from 'lucide-react';
 import { businessPlanGenerator, type BusinessPlanInput, type GeneratedBusinessPlan } from '../lib/businessPlanGenerator';
 import { databaseService, type BusinessPlanRecord } from '../lib/database';
@@ -812,7 +812,7 @@ export default function BusinessPlan() {
             <div className="mb-8">
               <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-2">{showPlanView.title}</h1>
               <p className="text-gray-600">Industry: {showPlanView.industry}</p>
-              <p className="text-sm text-gray-500">Created: {showPlanView.createdAt.toLocaleDateString()}</p>
+              <p className="text-sm text-gray-500">Created: {new Date(showPlanView.created_at).toLocaleDateString()}</p>
             </div>
 
             {/* Plan sections display */}
@@ -1106,23 +1106,23 @@ export default function BusinessPlan() {
       {/* Page header */}
       {!isInitialLoading && (
         <div className="flex items-center justify-between mb-8">
-        <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Business Plans</h1>
-          <p className="text-sm sm:text-base text-gray-600 mt-1">
-            Create professional business plans with AI assistance
-          </p>
+          <div>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Business Plans</h1>
+            <p className="text-sm sm:text-base text-gray-600 mt-1">
+              Create professional business plans with AI assistance
+            </p>
+          </div>
+          
+          {/* New plan button */}
+          <button
+            onClick={() => setShowGenerator(true)}
+            className="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          >
+            <Plus className="h-5 w-5" />
+            <span className="hidden sm:inline">New Plan</span>
+            <span className="sm:hidden">New</span>
+          </button>
         </div>
-        
-        {/* New plan button */}
-        <button
-          onClick={() => setShowGenerator(true)}
-          className="px-4 py-2 sm:px-6 sm:py-3 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
-        >
-          <Plus className="h-5 w-5" />
-          <span className="hidden sm:inline">New Plan</span>
-          <span className="sm:hidden">New</span>
-        </button>
-      </div>
       )}
 
       {/* Plans grid or empty state */}
@@ -1130,73 +1130,73 @@ export default function BusinessPlan() {
         <>
           {/* Plans grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {plans.map((plan) => (
-            <div key={plan.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-              <div className="p-4 sm:p-6">
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{plan.title}</h3>
-                    <p className="text-sm text-gray-600">{plan.industry}</p>
-                  </div>
-                  <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
-                    {plan.status}
-                  </span>
-                </div>
-                
-                <p className="text-sm text-gray-500 mb-4">
-                  Created: {new Date(plan.created_at).toLocaleDateString()}
-                </p>
-                <p className="text-sm text-gray-500 mb-4">
-                  {plan.sections_count || plan.generated_plan.length} sections
-                </p>
-
-                <div className="flex items-center space-x-2">
-                  <button 
-                    onClick={() => setShowPlanView(plan)}
-                    className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
-                  >
-                    <Eye className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">View</span>
-                  </button>
-                  
-                  <button 
-                    onClick={() => handleEditPlan(plan)}
-                    className="flex-1 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors flex items-center justify-center"
-                  >
-                    <Edit className="h-4 w-4 mr-1" />
-                    <span className="hidden sm:inline">Edit</span>
-                  </button>
-                  
-                  <div className="relative group">
-                    <button className="px-3 py-2 text-sm font-medium text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 transition-colors">
-                      <Download className="h-4 w-4" />
-                    </button>
-                    <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
-                      <button
-                        onClick={() => exportPlan(plan, 'pdf')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Export PDF
-                      </button>
-                      <button
-                        onClick={() => exportPlan(plan, 'docx')}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
-                      >
-                        Export Word
-                      </button>
+            {plans.map((plan) => (
+              <div key={plan.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
+                <div className="p-4 sm:p-6">
+                  <div className="flex items-start justify-between mb-4">
+                    <div className="flex-1">
+                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{plan.title}</h3>
+                      <p className="text-sm text-gray-600">{plan.industry}</p>
                     </div>
+                    <span className="px-2 py-1 text-xs font-medium rounded-full bg-green-100 text-green-800">
+                      {plan.status}
+                    </span>
                   </div>
                   
-                  <button
-                    onClick={() => deletePlan(plan.id)}
-                    className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
+                  <p className="text-sm text-gray-500 mb-4">
+                    Created: {new Date(plan.created_at).toLocaleDateString()}
+                  </p>
+                  <p className="text-sm text-gray-500 mb-4">
+                    {plan.sections_count || plan.generated_plan.length} sections
+                  </p>
+
+                  <div className="flex items-center space-x-2">
+                    <button 
+                      onClick={() => setShowPlanView(plan)}
+                      className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center"
+                    >
+                      <Eye className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">View</span>
+                    </button>
+                    
+                    <button 
+                      onClick={() => handleEditPlan(plan)}
+                      className="flex-1 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors flex items-center justify-center"
+                    >
+                      <Edit className="h-4 w-4 mr-1" />
+                      <span className="hidden sm:inline">Edit</span>
+                    </button>
+                    
+                    <div className="relative group">
+                      <button className="px-3 py-2 text-sm font-medium text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 transition-colors">
+                        <Download className="h-4 w-4" />
+                      </button>
+                      <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                        <button
+                          onClick={() => exportPlan(plan, 'pdf')}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Export PDF
+                        </button>
+                        <button
+                          onClick={() => exportPlan(plan, 'docx')}
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          Export Word
+                        </button>
+                      </div>
+                    </div>
+                    
+                    <button
+                      onClick={() => deletePlan(plan.id)}
+                      className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            ))}
           </div>
         </>
       ) : (
@@ -1211,8 +1211,7 @@ export default function BusinessPlan() {
             Create Your First Plan
           </button>
         </div>
-      )}
-      )}
+      ))}
     </div>
   );
 }
