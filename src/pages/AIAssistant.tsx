@@ -84,13 +84,6 @@ export default function AIAssistant() {
       console.error('AI Assistant Error:', error);
       setError(error instanceof Error ? error.message : 'Failed to get AI response');
       
-      // Provide specific guidance for quota errors
-      if (error instanceof Error && error.message.includes('quota')) {
-        setError('OpenAI API quota exceeded. Please visit platform.openai.com to check your billing and upgrade your plan if needed.');
-      } else {
-        setError(error instanceof Error ? error.message : 'Failed to get AI response');
-      }
-      
       // Add error message to chat
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -98,7 +91,7 @@ export default function AIAssistant() {
         content: "I apologize, but I'm having trouble connecting to the AI service right now. Please check your API configuration and try again.",
         timestamp: new Date()
       };
-      // Don't add generic error message if we already set a specific error
+      setMessages(prev => [...prev, errorMessage]);
     } finally {
       setIsLoading(false);
     }
