@@ -41,6 +41,7 @@
 import React, { useState } from 'react';
 import { FileText, Download, Plus, Eye, Edit, Trash2, Loader2, AlertCircle, MessageSquare } from 'lucide-react';
 import { businessPlanGenerator, type BusinessPlanInput, type GeneratedBusinessPlan } from '../lib/businessPlanGenerator';
+import { databaseService, type BusinessPlanRecord } from '../lib/database';
 
 /**
  * BusinessPlan Component
@@ -77,7 +78,10 @@ import { businessPlanGenerator, type BusinessPlanInput, type GeneratedBusinessPl
  */
 export default function BusinessPlan() {
   // Plans storage - in production, this would be persisted
-  const [plans, setPlans] = useState<GeneratedBusinessPlan[]>([]);
+  const [plans, setPlans] = useState<BusinessPlanRecord[]>([]);
+  
+  // Loading state for initial data fetch
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
   // View state management
   const [showGenerator, setShowGenerator] = useState(false);
@@ -86,7 +90,7 @@ export default function BusinessPlan() {
   const [showModifyMode, setShowModifyMode] = useState(false);
   
   // Edit state management
-  const [editedPlan, setEditedPlan] = useState<GeneratedBusinessPlan | null>(null);
+  const [editedPlan, setEditedPlan] = useState<BusinessPlanRecord | null>(null);
   const [modificationRequest, setModificationRequest] = useState('');
   
   // Loading states
@@ -117,6 +121,36 @@ export default function BusinessPlan() {
     revenueModel: '',
     goals: ''
   });
+
+  /**
+   * Load Business Plans from Database
+   * 
+   * Fetches user's business plans on component mount.
+   */
+  useEffect(() => {
+    const loadBusinessPlans = async () => {
+      try {
+        setIsInitialLoading(true);
+        const businessPlans = await databaseService.getBusinessPlans();
+        setPlans(businessPlans);
+      } catch (error) {
+        console.error('Error loading business plans:', error);
+        setError('Failed to load business plans');
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    loadBusinessPlans();
+  }, []);
+
+  /**
+   * Convert GeneratedBusinessPlan to BusinessPlanRecord format
+   */
+  const convertToBusinessPlanRecord = (generatedPlan: GeneratedBusinessPlan, formData: BusinessPlanInput): BusinessPlanRecord => {
+    // This conversion would be handled by the database service
+    return generatedPlan as any; // Type assertion for now
+  };
 
   /**
    * Industry Options
@@ -240,12 +274,30 @@ export default function BusinessPlan() {
     setIsGenerating(true);
     setError(null);
     
+    const startTime = Date.now();
     try {
       // Generate plan using AI service
       const generatedPlan = await businessPlanGenerator.generateBusinessPlan(formData);
+      const generationTime = Date.now() - startTime;
       
-      // Add to plans list (newest first)
-      setPlans(prev => [generatedPlan, ...prev]);
+      // Save to database
+      const savedPlan = await databaseService.saveBusinessPlan({
+        business_name: formData.businessName,
+        industry: formData.industry,
+        business_type: formData.businessType,
+        location: formData.location,
+        target_audience: formData.targetAudience,
+        value_proposition: formData.uniqueValue,
+        revenue_model: formData.revenueModel,
+        goals: formData.goals,
+        generated_plan: generatedPlan.sections,
+        title: generatedPlan.title,
+        ai_model_used: businessPlanGenerator.getCurrentModel(),
+        generation_time_ms: generationTime
+      });
+      
+      // Add to local state (newest first)
+      setPlans(prev => [savedPlan, ...prev]);
       
       // Return to list view and reset form
       setShowGenerator(false);
@@ -286,11 +338,28 @@ export default function BusinessPlan() {
    * - Custom styling and branding
    * - Multiple export templates
    */
-  const exportPlan = (plan: GeneratedBusinessPlan, format: 'pdf' | 'docx') => {
+  const exportPlan = async (plan: BusinessPlanRecord, format: 'pdf' | 'docx') => {
+    try {
+      // Increment export count in database
+      await databaseService.incrementExportCount(plan.id);
+    } catch (error) {
+      console.error('Failed to update export count:', error);
+    }
+    
+    // Convert to GeneratedBusinessPlan format for export
+    const exportPlan: GeneratedBusinessPlan = {
+      id: plan.id,
+      title: plan.title,
+      industry: plan.industry,
+      createdAt: new Date(plan.created_at),
+      sections: plan.generated_plan,
+      status: plan.status as 'draft' | 'complete'
+    };
+    
     if (format === 'pdf') {
-      businessPlanGenerator.exportToPDF(plan);
+      businessPlanGenerator.exportToPDF(exportPlan);
     } else {
-      businessPlanGenerator.exportToWord(plan);
+      businessPlanGenerator.exportToWord(exportPlan);
     }
   };
 
@@ -313,8 +382,14 @@ export default function BusinessPlan() {
    * - Bulk delete functionality
    * - Archive instead of delete
    */
-  const deletePlan = (planId: string) => {
-    setPlans(prev => prev.filter(plan => plan.id !== planId));
+  const deletePlan = async (planId: string) => {
+    try {
+      await databaseService.deleteBusinessPlan(planId);
+      setPlans(prev => prev.filter(plan => plan.id !== planId));
+    } catch (error) {
+      console.error('Error deleting business plan:', error);
+      setError('Failed to delete business plan');
+    }
   };
 
   /**
@@ -335,7 +410,7 @@ export default function BusinessPlan() {
    * - Full section editing capability
    * - Title editing support
    */
-  const handleEditPlan = (plan: GeneratedBusinessPlan) => {
+  const handleEditPlan = (plan: BusinessPlanRecord) => {
     setEditedPlan({ ...plan });
     setShowEditMode(true);
     setShowPlanView(null);
@@ -360,9 +435,19 @@ export default function BusinessPlan() {
    */
   const handleSaveEdit = () => {
     if (editedPlan) {
-      setPlans(prev => prev.map(plan => 
-        plan.id === editedPlan.id ? editedPlan : plan
-      ));
+      // Update database
+      databaseService.updateBusinessPlan(editedPlan.id, {
+        title: editedPlan.title,
+        generated_plan: editedPlan.generated_plan
+      }).then(updatedPlan => {
+        setPlans(prev => prev.map(plan => 
+          plan.id === editedPlan.id ? updatedPlan : plan
+        ));
+      }).catch(error => {
+        console.error('Error updating business plan:', error);
+        setError('Failed to update business plan');
+      });
+      
       setShowEditMode(false);
       setShowPlanView(editedPlan);
       setEditedPlan(null);
@@ -426,16 +511,44 @@ export default function BusinessPlan() {
     setIsModifying(true);
     setError(null);
     
+    const startTime = Date.now();
     try {
+      // Convert BusinessPlanRecord to GeneratedBusinessPlan for modification
+      const planForModification: GeneratedBusinessPlan = {
+        id: showPlanView.id,
+        title: showPlanView.title,
+        industry: showPlanView.industry,
+        createdAt: new Date(showPlanView.created_at),
+        sections: showPlanView.generated_plan,
+        status: showPlanView.status as 'draft' | 'complete'
+      };
+      
       // Request AI modification
       const modifiedPlan = await businessPlanGenerator.modifyBusinessPlan(
-        showPlanView, 
+        planForModification, 
         modificationRequest
       );
+      const modificationTime = Date.now() - startTime;
+      
+      // Save modified plan to database
+      const savedModifiedPlan = await databaseService.saveBusinessPlan({
+        business_name: showPlanView.business_name,
+        industry: showPlanView.industry,
+        business_type: showPlanView.business_type,
+        location: showPlanView.location,
+        target_audience: showPlanView.target_audience,
+        value_proposition: showPlanView.value_proposition,
+        revenue_model: showPlanView.revenue_model,
+        goals: showPlanView.goals,
+        generated_plan: modifiedPlan.sections,
+        title: `${showPlanView.title} (Modified)`,
+        ai_model_used: businessPlanGenerator.getCurrentModel(),
+        generation_time_ms: modificationTime
+      });
       
       // Add modified plan to list and show it
-      setPlans(prev => [modifiedPlan, ...prev]);
-      setShowPlanView(modifiedPlan);
+      setPlans(prev => [savedModifiedPlan, ...prev]);
+      setShowPlanView(savedModifiedPlan);
       
       // Reset modification state
       setShowModifyMode(false);
@@ -465,14 +578,14 @@ export default function BusinessPlan() {
    */
   const updateEditedSection = (sectionIndex: number, newContent: string) => {
     if (editedPlan) {
-      const updatedSections = [...editedPlan.sections];
+      const updatedSections = [...editedPlan.generated_plan];
       updatedSections[sectionIndex] = {
         ...updatedSections[sectionIndex],
         content: newContent
       };
       setEditedPlan({
         ...editedPlan,
-        sections: updatedSections
+        generated_plan: updatedSections
       });
     }
   };
@@ -538,14 +651,14 @@ export default function BusinessPlan() {
 
             {/* Section editing forms */}
             <div className="space-y-6">
-              {editedPlan.sections.map((section, index) => (
+              {editedPlan.generated_plan.map((section, index) => (
                 <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     {section.title}
                   </label>
                   {/* Large textarea for section content */}
                   <textarea
-                    value={section.content}
+                    value={section.content || ''}
                     onChange={(e) => updateEditedSection(index, e.target.value)}
                     rows={8}
                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm leading-relaxed"
@@ -704,14 +817,14 @@ export default function BusinessPlan() {
 
             {/* Plan sections display */}
             <div className="space-y-8">
-              {showPlanView.sections.map((section, index) => (
+              {showPlanView.generated_plan.map((section, index) => (
                 <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
                   {/* Section title */}
                   <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">{section.title}</h2>
                   
                   {/* Section content with proper formatting */}
                   <div className="text-sm sm:text-base text-gray-700 leading-relaxed">
-                    {section.content.split('\n\n').map((paragraph, pIndex) => (
+                    {(section.content || '').split('\n\n').map((paragraph, pIndex) => (
                       <p key={pIndex} className="mb-4 last:mb-0">
                         {paragraph.split('\n').map((line, lIndex) => (
                           <span key={lIndex}>
@@ -980,8 +1093,19 @@ export default function BusinessPlan() {
    */
   return (
     <div className="p-4 sm:p-6">
+      {/* Initial Loading State */}
+      {isInitialLoading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading your business plans...</p>
+          </div>
+        </div>
+      )}
+      
       {/* Page header */}
-      <div className="flex items-center justify-between mb-8">
+      {!isInitialLoading && (
+        <div className="flex items-center justify-between mb-8">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Business Plans</h1>
           <p className="text-sm sm:text-base text-gray-600 mt-1">
@@ -999,9 +1123,10 @@ export default function BusinessPlan() {
           <span className="sm:hidden">New</span>
         </button>
       </div>
+      )}
 
       {/* Plans grid or empty state */}
-      {plans.length > 0 ? (
+      {!isInitialLoading && (plans.length > 0 ? (
         <>
           {/* Plans grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
@@ -1019,10 +1144,10 @@ export default function BusinessPlan() {
                 </div>
                 
                 <p className="text-sm text-gray-500 mb-4">
-                  Created: {plan.createdAt.toLocaleDateString()}
+                  Created: {new Date(plan.created_at).toLocaleDateString()}
                 </p>
                 <p className="text-sm text-gray-500 mb-4">
-                  {plan.sections.length} sections
+                  {plan.sections_count || plan.generated_plan.length} sections
                 </p>
 
                 <div className="flex items-center space-x-2">
@@ -1086,6 +1211,7 @@ export default function BusinessPlan() {
             Create Your First Plan
           </button>
         </div>
+      )}
       )}
     </div>
   );

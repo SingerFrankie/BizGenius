@@ -32,6 +32,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Bookmark, Download, Trash2, AlertCircle, Loader2 } from 'lucide-react';
 import { businessAssistant, type ChatMessage } from '../lib/openai';
+import { databaseService, type ChatHistoryRecord } from '../lib/database';
 
 /**
  * Message Interface
@@ -82,14 +83,7 @@ interface Message {
  */
 export default function AIAssistant() {
   // Message history state - starts with welcome message
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: '1',
-      type: 'assistant',
-      content: "Hello! I'm your AI business assistant powerd by BizGenius. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
-      timestamp: new Date()
-    }
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   
   // User input state
   const [input, setInput] = useState('');
@@ -99,6 +93,9 @@ export default function AIAssistant() {
   
   // Error state for user feedback
   const [error, setError] = useState<string | null>(null);
+  
+  // Loading state for initial data fetch
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
   
   // Ref for auto-scrolling to bottom of messages
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -123,6 +120,73 @@ export default function AIAssistant() {
     scrollToBottom();
   }, [messages]);
 
+  /**
+   * Load Chat History from Database
+   * 
+   * Fetches user's chat history on component mount and converts
+   * database records to UI message format.
+   */
+  useEffect(() => {
+    const loadChatHistory = async () => {
+      try {
+        setIsInitialLoading(true);
+        const chatHistory = await databaseService.getChatHistory(50);
+        
+        if (chatHistory.length === 0) {
+          // Show welcome message if no history
+          setMessages([{
+            id: '1',
+            type: 'assistant',
+            content: "Hello! I'm your AI business assistant powered by BizGenius. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
+            timestamp: new Date()
+          }]);
+        } else {
+          // Convert database records to UI messages
+          const uiMessages: Message[] = [];
+          
+          // Group by conversation and sort
+          const sortedHistory = chatHistory.sort((a, b) => 
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+          );
+          
+          sortedHistory.forEach(record => {
+            // Add user question
+            uiMessages.push({
+              id: `${record.id}-question`,
+              type: 'user',
+              content: record.question,
+              timestamp: new Date(record.created_at)
+            });
+            
+            // Add AI answer
+            uiMessages.push({
+              id: record.id,
+              type: 'assistant',
+              content: record.answer,
+              timestamp: new Date(record.created_at),
+              bookmarked: record.is_bookmarked
+            });
+          });
+          
+          setMessages(uiMessages);
+        }
+      } catch (error) {
+        console.error('Error loading chat history:', error);
+        setError('Failed to load chat history');
+        // Show welcome message on error
+        setMessages([{
+          id: '1',
+          type: 'assistant',
+          content: "Hello! I'm your AI business assistant powered by BizGenius. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
+          timestamp: new Date()
+        }]);
+      } finally {
+        setIsInitialLoading(false);
+      }
+    };
+
+    loadChatHistory();
+  }, []);
   /**
    * Handle Send Message
    * 
@@ -150,7 +214,7 @@ export default function AIAssistant() {
    */
   const handleSend = async () => {
     // Validate input and loading state
-    if (!input.trim() || isLoading) return;
+    if (!input.trim() || isLoading || isInitialLoading) return;
 
     // Validate API key configuration
     if (!import.meta.env.VITE_OPENROUTER_API_KEY || import.meta.env.VITE_OPENROUTER_API_KEY === 'your_openrouter_api_key_here') {
@@ -172,6 +236,8 @@ export default function AIAssistant() {
     setIsLoading(true);
     setError(null);
 
+    const startTime = Date.now();
+
     try {
       // Convert UI messages to API format
       const chatMessages: ChatMessage[] = messages
@@ -189,6 +255,7 @@ export default function AIAssistant() {
 
       // Request AI response with full conversation context
       const response = await businessAssistant.getChatCompletion(chatMessages);
+      const responseTime = Date.now() - startTime;
 
       // Create AI response message
       const aiResponse: Message = {
@@ -200,6 +267,22 @@ export default function AIAssistant() {
 
       // Add AI response to conversation
       setMessages(prev => [...prev, aiResponse]);
+      
+      // Save to database
+      try {
+        await databaseService.saveChatHistory({
+          question: input,
+          answer: response,
+          conversation_id: crypto.randomUUID(),
+          message_type: 'interaction',
+          tokens_used: 0, // Would need to get from API response
+          model_used: businessAssistant.getCurrentModel(),
+          response_time_ms: responseTime
+        });
+      } catch (dbError) {
+        console.error('Failed to save chat to database:', dbError);
+        // Don't show error to user, just log it
+      }
     } catch (error) {
       console.error('AI Assistant Error:', error);
       setError(error instanceof Error ? error.message : 'Failed to get AI response');
@@ -221,24 +304,36 @@ export default function AIAssistant() {
   /**
    * Toggle Message Bookmark
    * 
-   * Allows users to bookmark important AI responses for later reference.
-   * Updates the message's bookmarked status in the state.
+   * Allows users to bookmark important AI responses.
+   * Updates both local state and database.
    * 
    * @param messageId - ID of message to bookmark/unbookmark
-   * 
-   * Future Enhancement:
-   * - Persist bookmarks to localStorage or database
-   * - Add bookmark management interface
-   * - Export bookmarked messages separately
    */
-  const toggleBookmark = (messageId: string) => {
-    setMessages(prev =>
-      prev.map(msg =>
-        msg.id === messageId
-          ? { ...msg, bookmarked: !msg.bookmarked }
-          : msg
-      )
-    );
+  const toggleBookmark = async (messageId: string) => {
+    try {
+      // Update local state immediately for better UX
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, bookmarked: !msg.bookmarked }
+            : msg
+        )
+      );
+      
+      // Update database
+      await databaseService.toggleChatBookmark(messageId);
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      // Revert local state on error
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, bookmarked: !msg.bookmarked }
+            : msg
+        )
+      );
+      setError('Failed to update bookmark');
+    }
   };
 
   /**
@@ -250,18 +345,24 @@ export default function AIAssistant() {
    * Resets:
    * - Messages array to initial welcome message
    * - Error state
-   * - Maintains user session and configuration
+   * - Clears database history
    */
-  const clearConversation = () => {
-    setMessages([
-      {
-        id: '1',
-        type: 'assistant',
-        content: "Hello! I'm your AI business assistant powered by OpenRouter. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
-        timestamp: new Date()
-      }
-    ]);
-    setError(null);
+  const clearConversation = async () => {
+    try {
+      await databaseService.clearAllChatHistory();
+      setMessages([
+        {
+          id: '1',
+          type: 'assistant',
+          content: "Hello! I'm your AI business assistant powered by BizGenius. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
+          timestamp: new Date()
+        }
+      ]);
+      setError(null);
+    } catch (error) {
+      console.error('Error clearing conversation:', error);
+      setError('Failed to clear conversation');
+    }
   };
 
   /**
@@ -347,8 +448,19 @@ export default function AIAssistant() {
    */
   return (
     <div className="h-full flex flex-col bg-gray-50">
+      {/* Initial Loading State */}
+      {isInitialLoading && (
+        <div className="flex-1 flex items-center justify-center">
+          <div className="text-center">
+            <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
+            <p className="text-gray-600">Loading your conversation history...</p>
+          </div>
+        </div>
+      )}
+      
       {/* Header Section - App title and action buttons */}
-      <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
+      {!isInitialLoading && (
+        <div className="bg-white border-b border-gray-200 px-4 py-3 sm:px-6 sm:py-4">
         <div className="flex items-center justify-between">
           {/* App branding and title */}
           <div className="flex items-center space-x-3">
@@ -383,9 +495,10 @@ export default function AIAssistant() {
           </div>
         </div>
       </div>
+      )}
 
       {/* Error Banner - Shows API or connection errors */}
-      {error && (
+      {!isInitialLoading && error && (
         <div className="bg-red-50 border-b border-red-200 px-4 py-3">
           <div className="flex items-center space-x-2">
             <AlertCircle className="h-5 w-5 text-red-500" />
@@ -395,7 +508,8 @@ export default function AIAssistant() {
       )}
 
       {/* Messages Container - Scrollable conversation area */}
-      <div className="flex-1 overflow-auto p-3 space-y-4 sm:p-6">
+      {!isInitialLoading && (
+        <div className="flex-1 overflow-auto p-3 space-y-4 sm:p-6">
         {messages.map((message) => (
           <div
             key={message.id}
@@ -470,9 +584,11 @@ export default function AIAssistant() {
         {/* Invisible element for auto-scrolling */}
         <div ref={messagesEndRef} />
       </div>
+      )}
 
       {/* Input Section - Message composition area */}
-      <div className="bg-white border-t border-gray-200 p-3 sm:p-6">
+      {!isInitialLoading && (
+        <div className="bg-white border-t border-gray-200 p-3 sm:p-6">
         <div className="flex space-x-2 sm:space-x-4">
           {/* Auto-resizing textarea for user input */}
           <textarea
@@ -494,7 +610,7 @@ export default function AIAssistant() {
           {/* Send button with loading state */}
           <button
             onClick={handleSend}
-            disabled={!input.trim() || isLoading}
+            disabled={!input.trim() || isLoading || isInitialLoading}
             className="px-3 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors sm:px-6 sm:py-3"
           >
             {isLoading ? (
@@ -510,6 +626,7 @@ export default function AIAssistant() {
           Press Enter to send, Shift+Enter for new line
         </p>
       </div>
+      )}
     </div>
   );
 }
