@@ -316,6 +316,100 @@ The plan should be professional, comprehensive, and ready for presentation to in
   getCurrentModel(): string {
     return this.model;
   }
+
+  // Modify existing business plan with AI assistance
+  async modifyBusinessPlan(
+    businessPlan: GeneratedBusinessPlan, 
+    modificationRequest: string
+  ): Promise<GeneratedBusinessPlan> {
+    if (!this.apiKey || this.apiKey === 'your_openrouter_api_key_here') {
+      throw new Error('OpenRouter API key not configured. Please add your API key to the .env file.');
+    }
+
+    try {
+      const currentPlanText = this.formatBusinessPlanForModification(businessPlan);
+      
+      const prompt = `You are an expert business plan consultant. Please modify the following business plan based on this specific request: "${modificationRequest}"
+
+Current Business Plan:
+${currentPlanText}
+
+Please provide the complete modified business plan with all sections updated as needed. Maintain the same professional structure and format. Focus specifically on the requested changes while ensuring the entire plan remains coherent and professional.
+
+IMPORTANT: Format your response as clean, readable text without any markdown formatting, asterisks, or special characters. Use plain text with proper paragraphs and line breaks.`;
+
+      const response = await fetch(`${this.baseUrl}/chat/completions`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.apiKey}`,
+          'Content-Type': 'application/json',
+          'HTTP-Referer': window.location.origin,
+          'X-Title': 'BizGenius Business Plan Modifier'
+        },
+        body: JSON.stringify({
+          model: this.model,
+          messages: [
+            { role: 'system', content: this.systemPrompt },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: 4000,
+          temperature: 0.7,
+          stream: false,
+        })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => ({}));
+        
+        if (response.status === 401) {
+          throw new Error('Invalid API key. Please check your OpenRouter API key configuration.');
+        } else if (response.status === 402) {
+          throw new Error('Insufficient credits. Please check your OpenRouter billing.');
+        } else if (response.status === 429) {
+          throw new Error('Rate limit exceeded. Please wait a moment and try again.');
+        } else {
+          throw new Error(errorData.error?.message || `API request failed with status ${response.status}`);
+        }
+      }
+
+      const data = await response.json();
+      const modifiedContent = data.choices[0]?.message?.content || 'Failed to modify business plan.';
+
+      // Parse the modified content into sections
+      const sections = this.parseBusinessPlanSections(modifiedContent);
+
+      const modifiedPlan: GeneratedBusinessPlan = {
+        ...businessPlan,
+        id: Date.now().toString(), // New ID for modified version
+        title: `${businessPlan.title} (Modified)`,
+        createdAt: new Date(),
+        sections,
+        status: 'complete'
+      };
+
+      return modifiedPlan;
+    } catch (error) {
+      console.error('Business Plan Modification Error:', error);
+      
+      if (error instanceof Error) {
+        throw error;
+      }
+      
+      throw new Error('Failed to modify business plan. Please try again.');
+    }
+  }
+
+  private formatBusinessPlanForModification(businessPlan: GeneratedBusinessPlan): string {
+    let content = `${businessPlan.title}\n`;
+    content += `Industry: ${businessPlan.industry}\n\n`;
+    
+    businessPlan.sections.forEach(section => {
+      content += `${section.title}\n`;
+      content += `${section.content}\n\n`;
+    });
+    
+    return content;
+  }
 }
 
 export const businessPlanGenerator = new BusinessPlanGenerator();

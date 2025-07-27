@@ -1,12 +1,17 @@
 import React, { useState } from 'react';
-import { FileText, Download, Plus, Eye, Edit, Trash2, Loader2, AlertCircle } from 'lucide-react';
+import { FileText, Download, Plus, Eye, Edit, Trash2, Loader2, AlertCircle, MessageSquare } from 'lucide-react';
 import { businessPlanGenerator, type BusinessPlanInput, type GeneratedBusinessPlan } from '../lib/businessPlanGenerator';
 
 export default function BusinessPlan() {
   const [plans, setPlans] = useState<GeneratedBusinessPlan[]>([]);
   const [showGenerator, setShowGenerator] = useState(false);
   const [showPlanView, setShowPlanView] = useState<GeneratedBusinessPlan | null>(null);
+  const [showEditMode, setShowEditMode] = useState(false);
+  const [showModifyMode, setShowModifyMode] = useState(false);
+  const [editedPlan, setEditedPlan] = useState<GeneratedBusinessPlan | null>(null);
+  const [modificationRequest, setModificationRequest] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isModifying, setIsModifying] = useState(false);
   const [error, setError] = useState<string | null>(null);
   
   const [formData, setFormData] = useState<BusinessPlanInput>({
@@ -93,6 +98,130 @@ export default function BusinessPlan() {
     setPlans(prev => prev.filter(plan => plan.id !== planId));
   };
 
+  const handleEditPlan = (plan: GeneratedBusinessPlan) => {
+    setEditedPlan({ ...plan });
+    setShowEditMode(true);
+    setShowPlanView(null);
+  };
+
+  const handleSaveEdit = () => {
+    if (editedPlan) {
+      setPlans(prev => prev.map(plan => 
+        plan.id === editedPlan.id ? editedPlan : plan
+      ));
+      setShowEditMode(false);
+      setShowPlanView(editedPlan);
+      setEditedPlan(null);
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setShowEditMode(false);
+    setEditedPlan(null);
+    if (showPlanView) {
+      // Return to plan view if we were editing from there
+      return;
+    }
+  };
+
+  const handleModifyRequest = async () => {
+    if (!showPlanView || !modificationRequest.trim()) return;
+    
+    setIsModifying(true);
+    setError(null);
+    
+    try {
+      const modifiedPlan = await businessPlanGenerator.modifyBusinessPlan(
+        showPlanView, 
+        modificationRequest
+      );
+      
+      setPlans(prev => [modifiedPlan, ...prev]);
+      setShowPlanView(modifiedPlan);
+      setShowModifyMode(false);
+      setModificationRequest('');
+    } catch (error) {
+      console.error('Business Plan Modification Error:', error);
+      setError(error instanceof Error ? error.message : 'Failed to modify business plan');
+    } finally {
+      setIsModifying(false);
+    }
+  };
+
+  const updateEditedSection = (sectionIndex: number, newContent: string) => {
+    if (editedPlan) {
+      const updatedSections = [...editedPlan.sections];
+      updatedSections[sectionIndex] = {
+        ...updatedSections[sectionIndex],
+        content: newContent
+      };
+      setEditedPlan({
+        ...editedPlan,
+        sections: updatedSections
+      });
+    }
+  };
+
+  // Edit Mode Component
+  if (showEditMode && editedPlan) {
+    return (
+      <div className="p-4 sm:p-6">
+        <div className="max-w-4xl mx-auto">
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Edit Business Plan</h1>
+            <div className="flex space-x-2">
+              <button
+                onClick={handleSaveEdit}
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Save Changes
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
+            {/* Title Edit */}
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Business Plan Title
+              </label>
+              <input
+                type="text"
+                value={editedPlan.title}
+                onChange={(e) => setEditedPlan({ ...editedPlan, title: e.target.value })}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              />
+            </div>
+
+            {/* Sections Edit */}
+            <div className="space-y-6">
+              {editedPlan.sections.map((section, index) => (
+                <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    {section.title}
+                  </label>
+                  <textarea
+                    value={section.content}
+                    onChange={(e) => updateEditedSection(index, e.target.value)}
+                    rows={8}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm leading-relaxed"
+                    placeholder={`Enter content for ${section.title}...`}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   // Plan Viewer Component
   if (showPlanView) {
     return (
@@ -105,7 +234,21 @@ export default function BusinessPlan() {
             >
               ← Back to Plans
             </button>
-            <div className="flex space-x-2">
+            <div className="flex flex-wrap gap-2">
+              <button
+                onClick={() => handleEditPlan(showPlanView)}
+                className="px-3 py-2 text-sm font-medium text-white bg-purple-600 rounded-lg hover:bg-purple-700 transition-colors flex items-center space-x-1"
+              >
+                <Edit className="h-4 w-4" />
+                <span className="hidden sm:inline">Edit</span>
+              </button>
+              <button
+                onClick={() => setShowModifyMode(!showModifyMode)}
+                className="px-3 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 transition-colors flex items-center space-x-1"
+              >
+                <MessageSquare className="h-4 w-4" />
+                <span className="hidden sm:inline">AI Modify</span>
+              </button>
               <button
                 onClick={() => exportPlan(showPlanView, 'pdf')}
                 className="px-3 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-1"
@@ -122,6 +265,60 @@ export default function BusinessPlan() {
               </button>
             </div>
           </div>
+
+          {/* AI Modification Panel */}
+          {showModifyMode && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 sm:p-6 mb-6">
+              <h3 className="text-lg font-semibold text-amber-900 mb-4 flex items-center">
+                <MessageSquare className="h-5 w-5 mr-2" />
+                Request AI Modifications
+              </h3>
+              <div className="space-y-4">
+                <textarea
+                  value={modificationRequest}
+                  onChange={(e) => setModificationRequest(e.target.value)}
+                  placeholder="Describe what you'd like to modify in your business plan. For example: 'Add more details about our marketing strategy' or 'Update the financial projections to be more conservative'"
+                  rows={3}
+                  className="w-full px-4 py-3 border border-amber-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent text-sm"
+                />
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleModifyRequest}
+                    disabled={!modificationRequest.trim() || isModifying}
+                    className="px-4 py-2 text-sm font-medium text-white bg-amber-600 rounded-lg hover:bg-amber-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center space-x-2"
+                  >
+                    {isModifying ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        <span>Modifying...</span>
+                      </>
+                    ) : (
+                      <>
+                        <MessageSquare className="h-4 w-4" />
+                        <span>Apply Modifications</span>
+                      </>
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowModifyMode(false);
+                      setModificationRequest('');
+                    }}
+                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center space-x-2">
+              <AlertCircle className="h-5 w-5 text-red-500" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
 
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 sm:p-8">
             <div className="mb-8">
@@ -379,6 +576,13 @@ export default function BusinessPlan() {
                   >
                     <Eye className="h-4 w-4 mr-1" />
                     <span className="hidden sm:inline">View</span>
+                  </button>
+                  <button 
+                    onClick={() => handleEditPlan(plan)}
+                    className="flex-1 px-3 py-2 text-sm font-medium text-purple-700 bg-purple-100 rounded-md hover:bg-purple-200 transition-colors flex items-center justify-center"
+                  >
+                    <Edit className="h-4 w-4 mr-1" />
+                    <span className="hidden sm:inline">Edit</span>
                   </button>
                   <div className="relative group">
                     <button className="px-3 py-2 text-sm font-medium text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 transition-colors">
