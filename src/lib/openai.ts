@@ -7,7 +7,7 @@ interface ChatMessage {
 export class BusinessAssistant {
   private apiKey: string;
   private baseUrl = 'https://openrouter.ai/api/v1';
-  private model = 'anthropic/claude-3.5-sonnet'; // You can change this to other models
+  private model = 'tngtech/deepseek-r1t2-chimera:free'; // Free model for cost-effective usage
 
   private systemPrompt = `You are an expert AI Business Assistant specializing in helping entrepreneurs, startups, and business owners. Your expertise includes:
 

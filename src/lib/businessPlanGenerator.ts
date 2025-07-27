@@ -28,7 +28,7 @@ export class BusinessPlanGenerator {
   private apiKey: string;
   
   private baseUrl = 'https://openrouter.ai/api/v1';
-  private model = 'anthropic/claude-3.5-sonnet';
+  private model = 'tngtech/deepseek-r1t2-chimera:free';
 
   private systemPrompt = `You are an expert business plan consultant with 20+ years of experience helping entrepreneurs and startups create professional, investor-ready business plans. Your expertise includes:
 
