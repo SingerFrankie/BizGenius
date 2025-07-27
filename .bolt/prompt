@@ -107,7 +107,7 @@ BizGenius is a comprehensive mobile-first business learning application that emp
 | **Auth**            | Secure User Authentication (OAuth, Email/Password)                            |
 | **Database**        | PostgreSQL (via Supabase )                                         |
 | **AI Integration**  | OpenAI API (GPT-4)  or open router Api                                                           |
-| **Cloud Storage**   | For plans, notes, and video  Supabase Storage) |
+| **Cloud Storage**   | For plans, notes, and video  (Supabase Storage) |
 | **Video Streaming** | HLS Streaming or Vimeo/YouTube private APIs                                   |
 | **Analytics**       | Custom analytics dashboard (learning progress, quiz scores, time spent)       |
 | **Exporting**       | Dynamic PDF/DOCX/PPTX generation (via Puppeteer or docx-pdf libraries)        |
