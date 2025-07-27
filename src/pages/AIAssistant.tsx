@@ -33,7 +33,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Bot, User, Bookmark, Download, Trash2, AlertCircle, Loader2, StickyNote } from 'lucide-react';
 import { businessAssistant, type ChatMessage } from '../lib/openai';
 import { databaseService, type ChatHistoryRecord } from '../lib/database';
-import NotesPanel from '../components/NotesPanel';</parameter>
+import NotesPanel from '../components/NotesPanel';
 
 /**
  * Message Interface
@@ -663,17 +663,11 @@ export default function AIAssistant() {
         </p>
       </div>
       )}
-      </div>
+    </div>
 
       {/* Notes Panel */}
       {showNotesPanel && (
-        <div className="w-80 border-l border-gray-200 bg-white">
-          <NotesPanel 
-            type="assistant"
-            title="Assistant Notes"
-            className="h-full rounded-none border-0 shadow-none"
-          />
-        </div>
+        <NotesPanel onClose={() => setShowNotesPanel(false)} />
       )}
     </div>
   );
