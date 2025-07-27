@@ -80,9 +80,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * Generates avatar URL and extracts relevant user information.
    */
   const transformUser = (supabaseUser: SupabaseUser): User => {
+    const firstName = supabaseUser.user_metadata?.first_name || '';
+    const lastName = supabaseUser.user_metadata?.last_name || '';
+    const fullName = supabaseUser.user_metadata?.full_name || 
+                     `${firstName} ${lastName}`.trim() || 
+                     supabaseUser.email?.split('@')[0] || 
+                     'User';
+
     return {
       id: supabaseUser.id,
-      name: supabaseUser.user_metadata?.name || supabaseUser.email?.split('@')[0] || 'User',
+      name: fullName,
       email: supabaseUser.email || '',
       avatar: `https://images.pexels.com/photos/220453/pexels-photo-220453.jpeg?auto=compress&cs=tinysrgb&w=64&h=64&dpr=2`,
       emailConfirmed: !!supabaseUser.email_confirmed_at,
@@ -208,14 +215,16 @@ export function AuthProvider({ children }: AuthProviderProps) {
    * 
    * @param email - User's email address
    * @param password - User's password
+   * @param firstName - User's first name (optional)
+   * @param lastName - User's last name (optional)
    * @throws Error with user-friendly message on failure
    */
-  const register = async (email: string, password: string) => {
+  const register = async (email: string, password: string, firstName?: string, lastName?: string) => {
     setIsLoading(true);
     setError(null);
     
     try {
-      const { data, error } = await signUp(email, password);
+      const { data, error } = await signUp(email, password, firstName, lastName);
       
       if (error) {
         // Handle specific Supabase registration errors

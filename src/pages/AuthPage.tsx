@@ -39,6 +39,8 @@ export default function AuthPage() {
   
   // Form data state
   const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
     email: '',
     password: ''
   });
@@ -79,6 +81,11 @@ export default function AuthPage() {
    * - Valid email format
    */
   const validateForm = () => {
+    if (!isLogin && (!formData.firstName || !formData.lastName)) {
+      setMessage({ type: 'error', text: 'Please fill in your first and last name' });
+      return false;
+    }
+    
     if (!formData.email || !formData.password) {
       setMessage({ type: 'error', text: 'Please fill in all fields' });
       return false;
@@ -136,7 +143,7 @@ export default function AuthPage() {
       } else {
         // Registration process
         try {
-          await register(formData.email, formData.password);
+          await register(formData.email, formData.password, formData.firstName, formData.lastName);
           
           // Registration successful
           setMessage({ type: 'success', text: 'Login successful! Redirecting...' });
@@ -174,7 +181,7 @@ export default function AuthPage() {
     setIsLogin(!isLogin);
     setMessage({ type: '', text: '' });
     clearError();
-    setFormData({ email: '', password: '' });
+    setFormData({ firstName: '', lastName: '', email: '', password: '' });
   };
 
   /**
@@ -253,6 +260,45 @@ export default function AuthPage() {
 
         {/* Authentication Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Name Fields - Only show during registration */}
+          {!isLogin && (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {/* First Name Input */}
+              <div>
+                <label htmlFor="firstName" className="block text-sm font-medium text-gray-700 mb-1">
+                  First Name
+                </label>
+                <input
+                  id="firstName"
+                  name="firstName"
+                  type="text"
+                  required={!isLogin}
+                  value={formData.firstName}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="Enter your first name"
+                />
+              </div>
+
+              {/* Last Name Input */}
+              <div>
+                <label htmlFor="lastName" className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Name
+                </label>
+                <input
+                  id="lastName"
+                  name="lastName"
+                  type="text"
+                  required={!isLogin}
+                  value={formData.lastName}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-2 sm:py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  placeholder="Enter your last name"
+                />
+              </div>
+            </div>
+          )}
+
           {/* Email Input Field */}
           <div>
             <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">

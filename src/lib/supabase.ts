@@ -17,14 +17,29 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey);
  * Sign up a new user with email and password
  * @param email - User's email address
  * @param password - User's password
+ * @param firstName - User's first name
+ * @param lastName - User's last name
  * @returns Promise with user data or error
  */
-export const signUp = async (email: string, password: string) => {
+export const signUp = async (email: string, password: string, firstName?: string, lastName?: string) => {
   try {
-    const { data, error } = await supabase.auth.signUp({
+    const userData: any = {
       email,
       password,
-    });
+    };
+
+    // Add user metadata if names are provided
+    if (firstName || lastName) {
+      userData.options = {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${firstName || ''} ${lastName || ''}`.trim()
+        }
+      };
+    }
+
+    const { data, error } = await supabase.auth.signUp(userData);
     
     if (error) throw error;
     return { data, error: null };
