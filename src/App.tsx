@@ -10,6 +10,7 @@ import LearningHub from './pages/LearningHub';
 import Analytics from './pages/Analytics';
 import { Profile } from './pages/Profile';
 import Login from './pages/Login';
+import AuthPage from './pages/AuthPage';
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
           <div className="min-h-screen bg-gray-50">
             <Routes>
               <Route path="/login" element={<Login />} />
+              <Route path="/auth" element={<AuthPage />} />
               <Route path="/" element={<Layout />}>
                 <Route index element={<Home />} />
                 <Route path="assistant" element={<AIAssistant />} />
