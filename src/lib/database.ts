@@ -1019,6 +1019,224 @@ export class DatabaseService {
       throw new Error('Failed to search notes');
     }
   }
+
+  // ==================== BOOKMARKS METHODS ====================
+
+  /**
+   * Create a new bookmark
+   */
+  async createBookmark(input: CreateBookmarkInput): Promise<BookmarkRecord> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .insert({
+          user_id: user.id,
+          type: input.type,
+          related_id: input.related_id
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error creating bookmark:', error);
+      throw new Error('Failed to create bookmark');
+    }
+  }
+
+  /**
+   * Get user's bookmarks with optional filtering
+   */
+  async getBookmarks(
+    type?: 'lesson' | 'chat',
+    limit: number = 50
+  ): Promise<BookmarkRecord[]> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      let query = supabase
+        .from('bookmarks')
+        .select('*')
+        .eq('user_id', user.id)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+
+      if (type) {
+        query = query.eq('type', type);
+      }
+
+      const { data, error } = await query;
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching bookmarks:', error);
+      throw new Error('Failed to fetch bookmarks');
+    }
+  }
+
+  /**
+   * Get bookmarks for lessons
+   */
+  async getLessonBookmarks(): Promise<BookmarkRecord[]> {
+    return this.getBookmarks('lesson');
+  }
+
+  /**
+   * Get bookmarks for chat responses
+   */
+  async getChatBookmarks(): Promise<BookmarkRecord[]> {
+    return this.getBookmarks('chat');
+  }
+
+  /**
+   * Check if item is bookmarked
+   */
+  async isBookmarked(type: 'lesson' | 'chat', relatedId: string): Promise<boolean> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('type', type)
+        .eq('related_id', relatedId)
+        .single();
+
+      if (error && error.code !== 'PGRST116') throw error;
+      return !!data;
+    } catch (error) {
+      console.error('Error checking bookmark status:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Toggle bookmark status
+   */
+  async toggleBookmark(type: 'lesson' | 'chat', relatedId: string): Promise<boolean> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      // Check if bookmark exists
+      const { data: existing, error: fetchError } = await supabase
+        .from('bookmarks')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('type', type)
+        .eq('related_id', relatedId)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+
+      if (existing) {
+        // Remove bookmark
+        const { error: deleteError } = await supabase
+          .from('bookmarks')
+          .delete()
+          .eq('id', existing.id);
+
+        if (deleteError) throw deleteError;
+        return false; // Not bookmarked anymore
+      } else {
+        // Create bookmark
+        await this.createBookmark({ type, related_id: relatedId });
+        return true; // Now bookmarked
+      }
+    } catch (error) {
+      console.error('Error toggling bookmark:', error);
+      throw new Error('Failed to toggle bookmark');
+    }
+  }
+
+  /**
+   * Delete a bookmark
+   */
+  async deleteBookmark(bookmarkId: string): Promise<void> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { error } = await supabase
+        .from('bookmarks')
+        .delete()
+        .eq('id', bookmarkId)
+        .eq('user_id', user.id);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error deleting bookmark:', error);
+      throw new Error('Failed to delete bookmark');
+    }
+  }
+
+  /**
+   * Get bookmarked lessons with lesson details
+   */
+  async getBookmarkedLessonsWithDetails(): Promise<any[]> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select(`
+          *,
+          lessons!inner(
+            id,
+            title,
+            description,
+            duration,
+            course_id,
+            courses!inner(
+              title,
+              category
+            )
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('type', 'lesson')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching bookmarked lessons:', error);
+      throw new Error('Failed to fetch bookmarked lessons');
+    }
+  }
+
+  /**
+   * Get bookmarked chats with chat details
+   */
+  async getBookmarkedChatsWithDetails(): Promise<any[]> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('bookmarks')
+        .select(`
+          *,
+          chat_history!inner(
+            id,
+            question,
+            answer,
+            created_at
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('type', 'chat')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error fetching bookmarked chats:', error);
+      throw new Error('Failed to fetch bookmarked chats');
+    }
+  }
 }
 
 /**
@@ -1114,6 +1332,22 @@ export interface CreateNoteInput {
 }
 
 /**
+ * Bookmarks Interfaces
+ */
+export interface BookmarkRecord {
+  id: string;
+  user_id: string;
+  type: 'lesson' | 'chat';
+  related_id: string;
+  created_at: string;
+}
+
+export interface CreateBookmarkInput {
+  type: 'lesson' | 'chat';
+  related_id: string;
+}
+
+/**
  * Singleton Database Service Instance
  * 
  * Pre-configured DatabaseService instance ready for immediate use.
@@ -1135,5 +1369,7 @@ export type {
   CourseProgressSummary,
   UserLearningStats,
   NoteRecord,
-  CreateNoteInput
+  CreateNoteInput,
+  BookmarkRecord,
+  CreateBookmarkInput
 };

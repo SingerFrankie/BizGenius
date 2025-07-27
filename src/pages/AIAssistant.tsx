@@ -153,6 +153,10 @@ export default function AIAssistant() {
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
           );
           
+          // Get bookmarked chat IDs for proper bookmark state
+          const chatBookmarks = await databaseService.getChatBookmarks();
+          const bookmarkedChatIds = new Set(chatBookmarks.map(b => b.related_id));
+          
           sortedHistory.forEach(record => {
             // Add user question
             uiMessages.push({
@@ -168,7 +172,7 @@ export default function AIAssistant() {
               type: 'assistant',
               content: record.answer,
               timestamp: new Date(record.created_at),
-              bookmarked: record.is_bookmarked
+              bookmarked: bookmarkedChatIds.has(record.id)
             });
           });
           
@@ -318,8 +322,8 @@ export default function AIAssistant() {
   /**
    * Toggle Message Bookmark
    * 
-   * Allows users to bookmark important AI responses.
-   * Updates both local state and database.
+   * Uses the new bookmarks system to bookmark chat responses.
+   * Updates both local state and database bookmarks table.
    * 
    * @param messageId - ID of message to bookmark/unbookmark
    */
@@ -341,8 +345,17 @@ export default function AIAssistant() {
         )
       );
       
-      // Update database
-      await databaseService.toggleChatBookmark(messageId);
+      // Update database using new bookmarks system
+      const isNowBookmarked = await databaseService.toggleBookmark('chat', messageId);
+      
+      // Ensure local state matches database state
+      setMessages(prev =>
+        prev.map(msg =>
+          msg.id === messageId
+            ? { ...msg, bookmarked: isNowBookmarked }
+            : msg
+        )
+      );
     } catch (error) {
       console.error('Error toggling bookmark:', error);
       // Revert local state on error

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useProgress } from '../contexts/ProgressContext';
 import { databaseService, type CourseRecord } from '../lib/database';
+import BookmarksPanel from '../components/BookmarksPanel';
 import { 
   MessageSquare, 
   FileText, 
@@ -11,13 +12,15 @@ import {
   Clock,
   Target,
   Zap,
-  Star
+  Star,
+  Bookmark
 } from 'lucide-react';
 
 export default function Home() {
   const { progress } = useProgress();
   const [featuredCourses, setFeaturedCourses] = useState<CourseRecord[]>([]);
   const [isLoadingCourses, setIsLoadingCourses] = useState(true);
+  const [showBookmarks, setShowBookmarks] = useState(false);
 
   /**
    * Load featured courses from database
@@ -100,9 +103,20 @@ export default function Home() {
     <div className="p-6 space-y-6">
       {/* Welcome Section */}
       <div className="bg-gradient-to-r from-blue-600 to-teal-600 rounded-xl p-8 text-white">
-        <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
-        <p className="text-blue-100 mb-6">Ready to take your business knowledge to the next level?</p>
-        <div className="flex flex-wrap gap-4">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-3xl font-bold mb-2">Welcome back!</h1>
+            <p className="text-blue-100">Ready to take your business knowledge to the next level?</p>
+          </div>
+          <button
+            onClick={() => setShowBookmarks(!showBookmarks)}
+            className="px-4 py-2 bg-white bg-opacity-20 text-white rounded-lg hover:bg-opacity-30 transition-colors flex items-center space-x-2"
+          >
+            <Bookmark className="h-4 w-4" />
+            <span className="hidden sm:inline">Bookmarks</span>
+          </button>
+        </div>
+        <div className="flex flex-wrap gap-4 mt-6">
           <div className="flex items-center space-x-2">
             <Clock className="h-5 w-5" />
             <span>5 min learning session</span>
@@ -117,6 +131,11 @@ export default function Home() {
           </div>
         </div>
       </div>
+
+      {/* Bookmarks Panel */}
+      {showBookmarks && (
+        <BookmarksPanel className="mb-6" />
+      )}
 
       {/* Quick Actions */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">

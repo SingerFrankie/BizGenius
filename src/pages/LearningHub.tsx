@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Play, BookOpen, Clock, Star, Bookmark, CheckCircle, Filter, StickyNote } from 'lucide-react';
+import { Play, BookOpen, Clock, Star, Bookmark, CheckCircle, Filter, StickyNote, BookmarkCheck } from 'lucide-react';
 import { databaseService, type CourseRecord, type CourseProgressSummary } from '../lib/database';
 import NotesPanel from '../components/NotesPanel';
 
@@ -54,11 +54,22 @@ export default function LearningHub() {
         const courseIds = coursesData.map(course => course.id);
         const progressData = await databaseService.getMultipleCourseProgress(courseIds).catch(() => ({}));
         
+        // Get bookmarked lessons to determine course bookmark status
+        const lessonBookmarks = await databaseService.getLessonBookmarks().catch(() => []);
+        const bookmarkedLessonIds = new Set(lessonBookmarks.map(b => b.related_id));
+        
+        // Get lessons for each course to check bookmark status
+        const courseLessons = await Promise.all(
+          coursesData.map(course => 
+            databaseService.getLessonsByCourse(course.id).catch(() => [])
+          )
+        );
+        
         // Add UI state to database courses
         const coursesWithProgress: CourseWithProgress[] = coursesData.map(course => ({
           ...course,
           completed: progressData[course.id]?.progress_percentage === 100,
-          bookmarked: Math.random() > 0.8, // Simulate some bookmarked courses
+          bookmarked: courseLessons[index]?.some(lesson => bookmarkedLessonIds.has(lesson.id)) || false,
           progress: progressData[course.id]?.progress_percentage || 0,
           realProgress: progressData[course.id]
         }));
@@ -81,9 +92,30 @@ export default function LearningHub() {
     return categoryMatch && levelMatch;
   });
 
-  const toggleBookmark = (courseId: string) => {
-    // In a real app, this would update the backend
-    console.log(`Toggling bookmark for course ${courseId}`);
+  const toggleBookmark = async (courseId: string) => {
+    try {
+      // Get first lesson of the course to bookmark
+      const lessons = await databaseService.getLessonsByCourse(courseId);
+      if (lessons.length === 0) {
+        setError('No lessons found for this course');
+        return;
+      }
+      
+      const firstLesson = lessons[0];
+      const isNowBookmarked = await databaseService.toggleBookmark('lesson', firstLesson.id);
+      
+      // Update local state
+      setCourses(prev =>
+        prev.map(course =>
+          course.id === courseId
+            ? { ...course, bookmarked: isNowBookmarked }
+            : course
+        )
+      );
+    } catch (error) {
+      console.error('Error toggling course bookmark:', error);
+      setError('Failed to update bookmark');
+    }
   };
 
   // Capitalize level for display
@@ -250,7 +282,11 @@ export default function LearningHub() {
                         course.bookmarked ? 'bg-amber-500 text-white' : 'bg-white text-gray-600'
                       } hover:scale-110 transition-transform`}
                     >
-                      <Bookmark className="h-4 w-4" fill={course.bookmarked ? 'currentColor' : 'none'} />
+                      {course.bookmarked ? (
+                        <BookmarkCheck className="h-4 w-4" />
+                      ) : (
+                        <Bookmark className="h-4 w-4" />
+                      )}
                     </button>
                   </div>
                   {course.progress > 0 && (
