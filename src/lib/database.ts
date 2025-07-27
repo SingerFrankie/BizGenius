@@ -393,8 +393,12 @@ export class DatabaseService {
       
       const { data, error } = await supabase
         .from('profiles')
-        .update(updates)
-        .eq('id', user.id)
+        .upsert({
+          id: user.id,
+          email: user.email,
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
         .select()
         .single();
 
