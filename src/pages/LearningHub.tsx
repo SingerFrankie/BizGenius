@@ -66,7 +66,7 @@ export default function LearningHub() {
         );
         
         // Add UI state to database courses
-        const coursesWithProgress: CourseWithProgress[] = coursesData.map(course => ({
+        const coursesWithProgress: CourseWithProgress[] = coursesData.map((course, index) => ({
           ...course,
           completed: progressData[course.id]?.progress_percentage === 100,
           bookmarked: courseLessons[index]?.some(lesson => bookmarkedLessonIds.has(lesson.id)) || false,
