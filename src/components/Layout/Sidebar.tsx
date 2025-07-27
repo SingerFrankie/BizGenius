@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NavLink } from 'react-router-dom';
+import { useAuth } from '../../contexts/AuthContext';
 import { 
   Home, 
   MessageSquare, 
@@ -9,7 +10,8 @@ import {
   User,
   Briefcase,
   Menu,
-  X
+  X,
+  LogOut
 } from 'lucide-react';
 
 const navigation = [
@@ -22,6 +24,7 @@ const navigation = [
 ];
 
 export default function Sidebar() {
+  const { logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   const toggleMobileMenu = () => {
@@ -32,6 +35,10 @@ export default function Sidebar() {
     setIsMobileMenuOpen(false);
   };
 
+  const handleLogout = () => {
+    logout();
+    closeMobileMenu();
+  };
   return (
     <>
       {/* Mobile Top Bar */}
@@ -75,7 +82,7 @@ export default function Sidebar() {
         </div>
         
         {/* Navigation */}
-        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto max-h-[calc(100vh-4rem)]">
+        <nav className="flex-1 px-4 py-6 space-y-2 overflow-y-auto max-h-[calc(100vh-8rem)] lg:max-h-[calc(100vh-4rem)]">
           {navigation.map((item) => (
             <NavLink
               key={item.name}
@@ -104,10 +111,19 @@ export default function Sidebar() {
           ))}
         </nav>
 
-        {/* Footer Section for Mobile */}
-        <div className="lg:hidden border-t border-gray-200 p-4">
-          <div className="text-xs text-gray-500 text-center">
-            © 2024 BizGenius
+        {/* Logout Button & Footer Section */}
+        <div className="border-t border-gray-200 p-4">
+          <button
+            onClick={handleLogout}
+            className="w-full flex items-center px-4 py-3 text-sm font-medium text-red-600 hover:bg-red-50 hover:text-red-700 rounded-lg transition-all duration-200 group mb-4"
+          >
+            <LogOut className="mr-3 h-5 w-5 text-red-500 group-hover:text-red-600" />
+            <span>Logout</span>
+          </button>
+          <div className="lg:hidden">
+            <div className="text-xs text-gray-500 text-center">
+              © 2024 BizGenius
+            </div>
           </div>
         </div>
       </div>
