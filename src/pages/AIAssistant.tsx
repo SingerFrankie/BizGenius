@@ -16,7 +16,7 @@ export default function AIAssistant() {
     {
       id: '1',
       type: 'assistant',
-      content: "Hello! I'm your AI business assistant powered by OpenRouter. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
+      content: "Hello! I'm your AI business assistant powerd by BizGenius. I can help you with marketing strategies, financial planning, operations management, business strategy, and more. What business challenge can I help you solve today?",
       timestamp: new Date()
     }
   ]);
