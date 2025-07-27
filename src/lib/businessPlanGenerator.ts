@@ -26,6 +26,7 @@ interface GeneratedBusinessPlan {
 
 export class BusinessPlanGenerator {
   private apiKey: string;
+  
   private baseUrl = 'https://openrouter.ai/api/v1';
   private model = 'anthropic/claude-3.5-sonnet';
 
