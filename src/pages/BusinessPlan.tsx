@@ -134,10 +134,17 @@ export default function BusinessPlan() {
               {showPlanView.sections.map((section, index) => (
                 <div key={index} className="border-b border-gray-200 pb-6 last:border-b-0">
                   <h2 className="text-xl sm:text-2xl font-semibold text-gray-900 mb-4">{section.title}</h2>
-                  <div className="prose max-w-none">
-                    <pre className="whitespace-pre-wrap text-sm sm:text-base text-gray-700 leading-relaxed font-sans">
-                      {section.content}
-                    </pre>
+                  <div className="text-sm sm:text-base text-gray-700 leading-relaxed">
+                    {section.content.split('\n\n').map((paragraph, pIndex) => (
+                      <p key={pIndex} className="mb-4 last:mb-0">
+                        {paragraph.split('\n').map((line, lIndex) => (
+                          <span key={lIndex}>
+                            {line}
+                            {lIndex < paragraph.split('\n').length - 1 && <br />}
+                          </span>
+                        ))}
+                      </p>
+                    ))}
                   </div>
                 </div>
               ))}

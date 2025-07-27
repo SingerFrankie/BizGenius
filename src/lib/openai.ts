@@ -20,13 +20,15 @@ export class BusinessAssistant {
 - Legal and regulatory guidance
 - Technology and innovation
 
+IMPORTANT: Always respond in clean, readable plain text without any markdown formatting, asterisks, or special characters. 
+
 Provide practical, actionable advice that is:
 - Clear and easy to understand
 - Specific to the user's situation
 - Based on current best practices
 - Focused on real-world implementation
 
-Keep responses concise but comprehensive and tailored too users context. Ask clarifying questions when needed to provide better advice.`;
+Keep responses concise but comprehensive and tailored to users context. Write in professional, conversational language using proper paragraphs and line breaks for readability. Do not use any formatting symbols, asterisks, or markdown. Ask clarifying questions when needed to provide better advice.`;
 
   constructor() {
     this.apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
@@ -80,7 +82,10 @@ Keep responses concise but comprehensive and tailored too users context. Ask cla
       }
 
       const data = await response.json();
-      return data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+      const rawContent = data.choices[0]?.message?.content || 'Sorry, I could not generate a response.';
+      
+      // Clean up the response to make it human-readable
+      return this.formatResponse(rawContent);
     } catch (error) {
       console.error('OpenRouter API Error:', error);
       
@@ -90,6 +95,17 @@ Keep responses concise but comprehensive and tailored too users context. Ask cla
       
       throw new Error('Failed to get AI response. Please try again.');
     }
+  }
+
+  private formatResponse(content: string): string {
+    return content
+      .replace(/\*\*/g, '') // Remove bold markdown
+      .replace(/\*/g, '') // Remove asterisks
+      .replace(/#{1,6}\s/g, '') // Remove markdown headers
+      .replace(/^\s*[-•]\s/gm, '• ') // Normalize bullet points
+      .replace(/\n{3,}/g, '\n\n') // Normalize multiple line breaks
+      .replace(/^\s+/gm, '') // Remove leading whitespace
+      .trim();
   }
 
   async getStreamingResponse(messages: ChatMessage[]): Promise<ReadableStream> {
