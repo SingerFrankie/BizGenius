@@ -191,6 +191,12 @@ export class DatabaseService {
       const user = await this.getCurrentUser();
       
       // First get current bookmark status
+      // Validate that messageId is a valid UUID format
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(messageId)) {
+        throw new Error('Invalid message ID format. Cannot bookmark message that is not saved to database.');
+      }
+      
       const { data: currentData, error: fetchError } = await supabase
         .from('chat_history')
         .select('is_bookmarked')

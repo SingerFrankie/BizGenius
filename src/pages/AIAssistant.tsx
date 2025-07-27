@@ -257,9 +257,10 @@ export default function AIAssistant() {
       const response = await businessAssistant.getChatCompletion(chatMessages);
       const responseTime = Date.now() - startTime;
 
-      // Create AI response message
+      // Create AI response message with temporary ID
+      const tempId = `temp-${Date.now()}`;
       const aiResponse: Message = {
-        id: (Date.now() + 1).toString(),
+        id: tempId,
         type: 'assistant',
         content: response,
         timestamp: new Date()
@@ -270,7 +271,7 @@ export default function AIAssistant() {
       
       // Save to database
       try {
-        await databaseService.saveChatHistory({
+        const savedRecord = await databaseService.saveChatHistory({
           question: input,
           answer: response,
           conversation_id: crypto.randomUUID(),
@@ -279,6 +280,15 @@ export default function AIAssistant() {
           model_used: businessAssistant.getCurrentModel(),
           response_time_ms: responseTime
         });
+        
+        // Update the message with the actual database UUID
+        setMessages(prev => 
+          prev.map(msg => 
+            msg.id === tempId 
+              ? { ...msg, id: savedRecord.id }
+              : msg
+          )
+        );
       } catch (dbError) {
         console.error('Failed to save chat to database:', dbError);
         // Don't show error to user, just log it
@@ -311,6 +321,13 @@ export default function AIAssistant() {
    */
   const toggleBookmark = async (messageId: string) => {
     try {
+      // Check if message has a valid UUID (is saved to database)
+      const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+      if (!uuidRegex.test(messageId)) {
+        setError('Cannot bookmark message that is still being processed. Please wait a moment and try again.');
+        return;
+      }
+      
       // Update local state immediately for better UX
       setMessages(prev =>
         prev.map(msg =>
