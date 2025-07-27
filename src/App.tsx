@@ -8,7 +8,7 @@ import AIAssistant from './pages/AIAssistant';
 import BusinessPlan from './pages/BusinessPlan';
 import LearningHub from './pages/LearningHub';
 import Analytics from './pages/Analytics';
-import Profile from './pages/Profile';
+import { Profile } from './pages/Profile';
 import Login from './pages/Login';
 
 function App() {

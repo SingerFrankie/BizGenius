@@ -15,7 +15,7 @@ import {
   Target
 } from 'lucide-react';
 
-export default function Profile() {
+export function Profile() {
   const { user } = useAuth();
   const { progress } = useProgress();
   const [isEditing, setIsEditing] = useState(false);
