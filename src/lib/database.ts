@@ -711,6 +711,162 @@ export class DatabaseService {
       throw new Error('Failed to search courses');
     }
   }
+
+  // ==================== USER PROGRESS METHODS ====================
+
+  /**
+   * Mark lesson as completed
+   */
+  async markLessonCompleted(lessonId: string): Promise<UserProgressRecord> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('user_progress')
+        .upsert({
+          user_id: user.id,
+          lesson_id: lessonId,
+          is_completed: true
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error marking lesson completed:', error);
+      throw new Error('Failed to mark lesson as completed');
+    }
+  }
+
+  /**
+   * Mark lesson as incomplete
+   */
+  async markLessonIncomplete(lessonId: string): Promise<UserProgressRecord> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('user_progress')
+        .upsert({
+          user_id: user.id,
+          lesson_id: lessonId,
+          is_completed: false
+        })
+        .select()
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error marking lesson incomplete:', error);
+      throw new Error('Failed to mark lesson as incomplete');
+    }
+  }
+
+  /**
+   * Get user's progress for a specific course
+   */
+  async getCourseProgress(courseId: string): Promise<CourseProgressSummary> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .rpc('get_course_progress', {
+          p_user_id: user.id,
+          p_course_id: courseId
+        })
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting course progress:', error);
+      throw new Error('Failed to get course progress');
+    }
+  }
+
+  /**
+   * Get user's overall learning statistics
+   */
+  async getUserLearningStats(): Promise<UserLearningStats> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .rpc('get_user_learning_stats', {
+          p_user_id: user.id
+        })
+        .single();
+
+      if (error) throw error;
+      return data;
+    } catch (error) {
+      console.error('Error getting user learning stats:', error);
+      throw new Error('Failed to get learning statistics');
+    }
+  }
+
+  /**
+   * Get user's progress for multiple courses
+   */
+  async getMultipleCourseProgress(courseIds: string[]): Promise<Record<string, CourseProgressSummary>> {
+    try {
+      const user = await this.getCurrentUser();
+      const progressMap: Record<string, CourseProgressSummary> = {};
+      
+      // Get progress for each course
+      for (const courseId of courseIds) {
+        try {
+          const progress = await this.getCourseProgress(courseId);
+          progressMap[courseId] = progress;
+        } catch (error) {
+          // If error getting progress for a course, set default values
+          progressMap[courseId] = {
+            total_lessons: 0,
+            completed_lessons: 0,
+            progress_percentage: 0,
+            last_completed_at: null
+          };
+        }
+      }
+      
+      return progressMap;
+    } catch (error) {
+      console.error('Error getting multiple course progress:', error);
+      throw new Error('Failed to get course progress');
+    }
+  }
+
+  /**
+   * Get user's lesson progress for a specific course
+   */
+  async getLessonProgress(courseId: string): Promise<UserProgressRecord[]> {
+    try {
+      const user = await this.getCurrentUser();
+      
+      const { data, error } = await supabase
+        .from('user_progress')
+        .select(`
+          *,
+          lessons!inner(
+            id,
+            course_id,
+            title,
+            order
+          )
+        `)
+        .eq('user_id', user.id)
+        .eq('lessons.course_id', courseId)
+        .order('lessons.order', { ascending: true });
+
+      if (error) throw error;
+      return data || [];
+    } catch (error) {
+      console.error('Error getting lesson progress:', error);
+      throw new Error('Failed to get lesson progress');
+    }
+  }
 }
 
 /**
@@ -758,6 +914,35 @@ export interface LessonRecord {
 }
 
 /**
+ * User Progress Interfaces
+ */
+export interface UserProgressRecord {
+  id: string;
+  user_id: string;
+  lesson_id: string;
+  is_completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CourseProgressSummary {
+  total_lessons: number;
+  completed_lessons: number;
+  progress_percentage: number;
+  last_completed_at: string | null;
+}
+
+export interface UserLearningStats {
+  total_courses_started: number;
+  total_courses_completed: number;
+  total_lessons_completed: number;
+  total_learning_time_minutes: number;
+  current_streak_days: number;
+  last_activity_date: string | null;
+}
+
+/**
  * Singleton Database Service Instance
  * 
  * Pre-configured DatabaseService instance ready for immediate use.
@@ -774,5 +959,8 @@ export type {
   BusinessPlanRecord, 
   CreateBusinessPlanInput,
   CourseRecord,
-  LessonRecord
+  LessonRecord,
+  UserProgressRecord,
+  CourseProgressSummary,
+  UserLearningStats
 };

@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
+import { databaseService, type UserLearningStats } from '../lib/database';
 
 interface Progress {
   coursesCompleted: number;
@@ -7,12 +8,14 @@ interface Progress {
   aiInteractions: number;
   learningStreak: number;
   achievements: string[];
+  realStats?: UserLearningStats;
 }
 
 interface ProgressContextType {
   progress: Progress;
   updateProgress: (key: keyof Progress, value: number | string[]) => void;
   addAchievement: (achievement: string) => void;
+  refreshStats: () => Promise<void>;
 }
 
 const ProgressContext = createContext<ProgressContextType | undefined>(undefined);
@@ -39,6 +42,20 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
     achievements: ['First Business Plan', 'AI Expert', '5-Day Streak']
   });
 
+  const refreshStats = async () => {
+    try {
+      const realStats = await databaseService.getUserLearningStats();
+      setProgress(prev => ({
+        ...prev,
+        coursesCompleted: realStats.total_courses_completed,
+        learningStreak: realStats.current_streak_days,
+        realStats
+      }));
+    } catch (error) {
+      console.error('Error refreshing stats:', error);
+    }
+  };
+
   const updateProgress = (key: keyof Progress, value: number | string[]) => {
     setProgress(prev => ({
       ...prev,
@@ -54,7 +71,7 @@ export function ProgressProvider({ children }: ProgressProviderProps) {
   };
 
   return (
-    <ProgressContext.Provider value={{ progress, updateProgress, addAchievement }}>
+    <ProgressContext.Provider value={{ progress, updateProgress, addAchievement, refreshStats }}>
       {children}
     </ProgressContext.Provider>
   );

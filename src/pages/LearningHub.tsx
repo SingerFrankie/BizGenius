@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { Play, BookOpen, Clock, Star, Bookmark, CheckCircle, Filter } from 'lucide-react';
-import { databaseService, type CourseRecord } from '../lib/database';
+import { databaseService, type CourseRecord, type CourseProgressSummary } from '../lib/database';
 
 // Extended interface for UI state
 interface CourseWithProgress extends CourseRecord {
   completed: boolean;
   bookmarked: boolean;
   progress: number;
+  realProgress?: CourseProgressSummary;
 }
 
 export default function LearningHub() {
@@ -15,6 +16,7 @@ export default function LearningHub() {
   const [courses, setCourses] = useState<CourseWithProgress[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [userStats, setUserStats] = useState<any>(null);
 
   const categories = ['All', 'Marketing', 'Finance', 'Operations', 'Strategy', 'Leadership'];
   const levels = ['All', 'beginner', 'intermediate', 'advanced'];
@@ -28,14 +30,32 @@ export default function LearningHub() {
         setIsLoading(true);
         setError(null);
         
-        const coursesData = await databaseService.getCourses();
+        // Load courses and user stats in parallel
+        const [coursesData, statsData] = await Promise.all([
+          databaseService.getCourses(),
+          databaseService.getUserLearningStats().catch(() => ({
+            total_courses_started: 0,
+            total_courses_completed: 0,
+            total_lessons_completed: 0,
+            total_learning_time_minutes: 0,
+            current_streak_days: 0,
+            last_activity_date: null
+          }))
+        ]);
+        
+        setUserStats(statsData);
+        
+        // Get real progress for all courses
+        const courseIds = coursesData.map(course => course.id);
+        const progressData = await databaseService.getMultipleCourseProgress(courseIds).catch(() => ({}));
         
         // Add UI state to database courses
         const coursesWithProgress: CourseWithProgress[] = coursesData.map(course => ({
           ...course,
-          completed: Math.random() > 0.7, // Simulate some completed courses
+          completed: progressData[course.id]?.progress_percentage === 100,
           bookmarked: Math.random() > 0.8, // Simulate some bookmarked courses
-          progress: Math.random() > 0.5 ? Math.floor(Math.random() * 100) : 0 // Simulate progress
+          progress: progressData[course.id]?.progress_percentage || 0,
+          realProgress: progressData[course.id]
         }));
         
         setCourses(coursesWithProgress);
@@ -80,12 +100,19 @@ export default function LearningHub() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Courses Completed</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">3 / 12</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                {userStats?.total_courses_completed || 0} / {courses.length}
+              </p>
             </div>
             <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
           </div>
           <div className="mt-4 bg-gray-200 rounded-full h-2">
-            <div className="bg-green-500 h-2 rounded-full" style={{ width: '25%' }}></div>
+            <div 
+              className="bg-green-500 h-2 rounded-full transition-all duration-500" 
+              style={{ 
+                width: `${courses.length > 0 ? ((userStats?.total_courses_completed || 0) / courses.length) * 100 : 0}%` 
+              }}
+            ></div>
           </div>
         </div>
 
@@ -93,7 +120,9 @@ export default function LearningHub() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Hours Learned</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">24.5</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                {userStats ? Math.round((userStats.total_learning_time_minutes || 0) / 60 * 10) / 10 : 0}
+              </p>
             </div>
             <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
@@ -103,12 +132,14 @@ export default function LearningHub() {
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm font-medium text-gray-600">Certificates Earned</p>
-              <p className="text-xl sm:text-2xl font-bold text-gray-900">3</p>
+              <p className="text-sm font-medium text-gray-600">Learning Streak</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">
+                {userStats?.current_streak_days || 0} days
+              </p>
             </div>
             <Star className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500" />
           </div>
-          <p className="text-sm text-gray-500 mt-2">Download available</p>
+          <p className="text-sm text-gray-500 mt-2">Keep it up!</p>
         </div>
       </div>
 
@@ -210,6 +241,11 @@ export default function LearningHub() {
                       style={{ width: `${course.progress}%` }}
                     ></div>
                   </div>
+                  {course.realProgress && course.realProgress.total_lessons > 0 && (
+                    <div className="text-xs text-gray-600 mt-1">
+                      {course.realProgress.completed_lessons}/{course.realProgress.total_lessons} lessons
+                    </div>
+                  )}
                 </div>
               )}
             </div>
