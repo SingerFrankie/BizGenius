@@ -46,7 +46,7 @@ Create comprehensive, professional business plans that are:
 - Investor-ready with compelling narratives
 - Actionable with clear implementation steps
 
-Format your response as a structured business plan with the following sections:
+IMPORTANT: Format your response as clean, readable text without any markdown formatting, asterisks, or special characters. Use plain text with proper paragraphs and line breaks. Structure your response with the following sections:
 1. Executive Summary
 2. Company Description
 3. Market Analysis
@@ -58,7 +58,7 @@ Format your response as a structured business plan with the following sections:
 9. Implementation Timeline
 10. Appendices
 
-Each section should be detailed, professional, and specific to the business context provided.`;
+Each section should be detailed, professional, and specific to the business context provided. Write in clear, professional language without any formatting symbols, asterisks, or markdown. Use proper paragraphs with line breaks for readability.`;
 
   constructor() {
     this.apiKey = import.meta.env.VITE_OPENROUTER_API_KEY;
@@ -165,6 +165,15 @@ The plan should be professional, comprehensive, and ready for presentation to in
   private parseBusinessPlanSections(content: string): BusinessPlanSection[] {
     const sections: BusinessPlanSection[] = [];
     
+    // Clean up the content first - remove asterisks and markdown formatting
+    const cleanContent = content
+      .replace(/\*\*/g, '') // Remove bold markdown
+      .replace(/\*/g, '') // Remove asterisks
+      .replace(/#{1,6}\s/g, '') // Remove markdown headers
+      .replace(/^\s*[-•]\s/gm, '• ') // Normalize bullet points
+      .replace(/\n{3,}/g, '\n\n') // Normalize multiple line breaks
+      .trim();
+    
     // Split content by common section headers
     const sectionHeaders = [
       'Executive Summary',
@@ -182,7 +191,7 @@ The plan should be professional, comprehensive, and ready for presentation to in
     let currentSection = '';
     let currentContent = '';
     
-    const lines = content.split('\n');
+    const lines = cleanContent.split('\n');
     
     for (const line of lines) {
       const trimmedLine = line.trim();
@@ -190,7 +199,7 @@ The plan should be professional, comprehensive, and ready for presentation to in
       // Check if this line is a section header
       const matchedHeader = sectionHeaders.find(header => 
         trimmedLine.toLowerCase().includes(header.toLowerCase()) &&
-        (trimmedLine.startsWith('#') || trimmedLine.startsWith('**') || trimmedLine.match(/^\d+\./))
+        (trimmedLine.match(/^\d+\./) || trimmedLine.toLowerCase() === header.toLowerCase())
       );
       
       if (matchedHeader) {
@@ -198,7 +207,7 @@ The plan should be professional, comprehensive, and ready for presentation to in
         if (currentSection && currentContent.trim()) {
           sections.push({
             title: currentSection,
-            content: currentContent.trim()
+            content: this.formatSectionContent(currentContent.trim())
           });
         }
         
@@ -215,7 +224,7 @@ The plan should be professional, comprehensive, and ready for presentation to in
     if (currentSection && currentContent.trim()) {
       sections.push({
         title: currentSection,
-        content: currentContent.trim()
+        content: this.formatSectionContent(currentContent.trim())
       });
     }
     
@@ -223,11 +232,21 @@ The plan should be professional, comprehensive, and ready for presentation to in
     if (sections.length === 0) {
       sections.push({
         title: 'Business Plan',
-        content: content
+        content: this.formatSectionContent(cleanContent)
       });
     }
     
     return sections;
+  }
+
+  private formatSectionContent(content: string): string {
+    return content
+      .replace(/\*\*/g, '') // Remove any remaining bold markdown
+      .replace(/\*/g, '') // Remove any remaining asterisks
+      .replace(/^\s*[-•]\s/gm, '• ') // Normalize bullet points
+      .replace(/\n{3,}/g, '\n\n') // Normalize line breaks
+      .replace(/^\s+/gm, '') // Remove leading whitespace from lines
+      .trim();
   }
 
   // Export business plan to different formats
