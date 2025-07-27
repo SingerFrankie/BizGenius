@@ -52,13 +52,18 @@ Keep responses concise but comprehensive. Ask clarifying questions when needed t
       console.error('OpenAI API Error:', error);
       
       if (error instanceof Error) {
-        if (error.message.includes('API key')) {
+        if (error.message.includes('API key') || error.message.includes('Incorrect API key')) {
           throw new Error('Invalid API key. Please check your OpenAI API key configuration.');
         } else if (error.message.includes('quota')) {
           throw new Error('API quota exceeded. Please check your OpenAI billing.');
         } else if (error.message.includes('rate limit')) {
           throw new Error('Rate limit exceeded. Please wait a moment and try again.');
         }
+      }
+      
+      // Handle 429 status code specifically
+      if (error.status === 429) {
+        throw new Error('API quota exceeded. Please check your OpenAI billing and usage limits at platform.openai.com');
       }
       
       throw new Error('Failed to get AI response. Please try again.');
