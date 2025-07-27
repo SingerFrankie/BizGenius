@@ -96,73 +96,73 @@ export default function Home() {
       </div>
 
       {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         {quickActions.map((action, index) => (
           <Link
             key={index}
             to={action.link}
-            className="group p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-gray-300"
+            className="group p-4 sm:p-6 bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-200 border border-gray-200 hover:border-gray-300"
           >
-            <div className={`inline-flex items-center justify-center w-12 h-12 rounded-lg ${action.color} text-white mb-4 group-hover:scale-110 transition-transform`}>
+            <div className={`inline-flex items-center justify-center w-10 h-10 sm:w-12 sm:h-12 rounded-lg ${action.color} text-white mb-3 sm:mb-4 group-hover:scale-110 transition-transform`}>
               <action.icon className="h-6 w-6" />
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 mb-2">{action.title}</h3>
-            <p className="text-gray-600 text-sm">{action.description}</p>
+            <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1 sm:mb-2">{action.title}</h3>
+            <p className="text-gray-600 text-xs sm:text-sm">{action.description}</p>
           </Link>
         ))}
       </div>
 
       {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-6">
         {stats.map((stat, index) => (
-          <div key={index} className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+          <div key={index} className="bg-white p-3 sm:p-6 rounded-xl shadow-sm border border-gray-200">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-600 text-sm font-medium">{stat.title}</p>
-                <p className="text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
+                <p className="text-gray-600 text-xs sm:text-sm font-medium">{stat.title}</p>
+                <p className="text-lg sm:text-2xl font-bold text-gray-900 mt-1">{stat.value}</p>
               </div>
-              <stat.icon className={`h-8 w-8 ${stat.color}`} />
+              <stat.icon className={`h-6 w-6 sm:h-8 sm:w-8 ${stat.color}`} />
             </div>
           </div>
         ))}
       </div>
 
       {/* Recent Activity */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Recent Activity</h3>
           <div className="space-y-4">
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Completed "Marketing Fundamentals"</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-900">Completed "Marketing Fundamentals"</p>
                 <p className="text-xs text-gray-500">2 hours ago</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-teal-500 rounded-full mt-2"></div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Generated new business plan</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-900">Generated new business plan</p>
                 <p className="text-xs text-gray-500">Yesterday</p>
               </div>
             </div>
             <div className="flex items-start space-x-3">
               <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
               <div>
-                <p className="text-sm font-medium text-gray-900">Asked AI about financial projections</p>
+                <p className="text-xs sm:text-sm font-medium text-gray-900">Asked AI about financial projections</p>
                 <p className="text-xs text-gray-500">2 days ago</p>
               </div>
             </div>
           </div>
         </div>
 
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Achievements</h3>
+        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
+          <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-4">Achievements</h3>
           <div className="space-y-3">
             {progress.achievements.map((achievement, index) => (
               <div key={index} className="flex items-center space-x-3">
                 <Award className="h-5 w-5 text-amber-500" />
-                <span className="text-sm font-medium text-gray-900">{achievement}</span>
+                <span className="text-xs sm:text-sm font-medium text-gray-900">{achievement}</span>
               </div>
             ))}
           </div>

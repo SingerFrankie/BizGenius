@@ -122,89 +122,91 @@ export default function LearningHub() {
   };
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900 mb-2">Learning Hub</h1>
-        <p className="text-gray-600">Expand your business knowledge with expert-led courses</p>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">Learning Hub</h1>
+        <p className="text-sm sm:text-base text-gray-600">Expand your business knowledge with expert-led courses</p>
       </div>
 
       {/* Progress Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-6 mb-8">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Courses Completed</p>
-              <p className="text-2xl font-bold text-gray-900">3 / 12</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">3 / 12</p>
             </div>
-            <CheckCircle className="h-8 w-8 text-green-500" />
+            <CheckCircle className="h-6 w-6 sm:h-8 sm:w-8 text-green-500" />
           </div>
           <div className="mt-4 bg-gray-200 rounded-full h-2">
             <div className="bg-green-500 h-2 rounded-full" style={{ width: '25%' }}></div>
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Hours Learned</p>
-              <p className="text-2xl font-bold text-gray-900">24.5</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">24.5</p>
             </div>
-            <Clock className="h-8 w-8 text-blue-500" />
+            <Clock className="h-6 w-6 sm:h-8 sm:w-8 text-blue-500" />
           </div>
           <p className="text-sm text-gray-500 mt-2">This month</p>
         </div>
 
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm font-medium text-gray-600">Certificates Earned</p>
-              <p className="text-2xl font-bold text-gray-900">3</p>
+              <p className="text-xl sm:text-2xl font-bold text-gray-900">3</p>
             </div>
-            <Star className="h-8 w-8 text-amber-500" />
+            <Star className="h-6 w-6 sm:h-8 sm:w-8 text-amber-500" />
           </div>
           <p className="text-sm text-gray-500 mt-2">Download available</p>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 mb-8">
-        <div className="flex items-center space-x-6">
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6 mb-8">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center space-y-3 sm:space-y-0 sm:space-x-6">
           <div className="flex items-center space-x-2">
             <Filter className="h-5 w-5 text-gray-500" />
             <span className="text-sm font-medium text-gray-700">Filters:</span>
           </div>
           
-          <div className="flex items-center space-x-2">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-4 w-full sm:w-auto">
+            <div className="flex items-center space-x-2">
             <label className="text-sm font-medium text-gray-700">Category:</label>
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 sm:flex-none"
             >
               {categories.map(category => (
                 <option key={category} value={category}>{category}</option>
               ))}
             </select>
-          </div>
+            </div>
 
-          <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2">
             <label className="text-sm font-medium text-gray-700">Level:</label>
             <select
               value={selectedLevel}
               onChange={(e) => setSelectedLevel(e.target.value)}
-              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-3 py-1 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-transparent flex-1 sm:flex-none"
             >
               {levels.map(level => (
                 <option key={level} value={level}>{level}</option>
               ))}
             </select>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Courses Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {filteredCourses.map((course) => (
           <div key={course.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
             <div className="relative">
@@ -247,13 +249,13 @@ export default function LearningHub() {
               )}
             </div>
             
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="mb-3">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">{course.title}</h3>
+                <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">{course.title}</h3>
                 <p className="text-sm text-gray-600 leading-relaxed">{course.description}</p>
               </div>
               
-              <div className="flex items-center space-x-4 text-sm text-gray-500 mb-4">
+              <div className="flex items-center space-x-3 sm:space-x-4 text-xs sm:text-sm text-gray-500 mb-4">
                 <div className="flex items-center space-x-1">
                   <Clock className="h-4 w-4" />
                   <span>{course.duration}</span>
@@ -270,7 +272,7 @@ export default function LearningHub() {
               
               <button className="w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center justify-center space-x-2">
                 <Play className="h-4 w-4" />
-                <span>{course.progress > 0 ? 'Continue' : 'Start Course'}</span>
+                <span className="text-sm sm:text-base">{course.progress > 0 ? 'Continue' : 'Start Course'}</span>
               </button>
             </div>
           </div>

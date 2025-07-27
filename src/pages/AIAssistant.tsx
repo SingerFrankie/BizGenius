@@ -112,44 +112,44 @@ export default function AIAssistant() {
   return (
     <div className="h-full flex flex-col bg-gray-50">
       {/* Header */}
-      <div className="bg-white border-b border-gray-200 px-6 py-4">
+      <div className="bg-white border-b border-gray-200 px-4 sm:px-6 py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-3">
             <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
               <Bot className="h-6 w-6 text-blue-600" />
             </div>
             <div>
-              <h1 className="text-xl font-semibold text-gray-900">AI Business Assistant</h1>
-              <p className="text-sm text-gray-500">Get expert business advice powered by AI</p>
+              <h1 className="text-lg sm:text-xl font-semibold text-gray-900">AI Business Assistant</h1>
+              <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Get expert business advice powered by AI</p>
             </div>
           </div>
-          <div className="flex items-center space-x-2">
+          <div className="flex items-center space-x-1 sm:space-x-2">
             <button
               onClick={exportConversation}
-              className="px-3 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 transition-colors"
             >
-              <Download className="h-4 w-4 mr-2 inline" />
-              Export
+              <Download className="h-4 w-4 sm:mr-2 inline" />
+              <span className="hidden sm:inline">Export</span>
             </button>
             <button
               onClick={clearConversation}
-              className="px-3 py-2 text-sm font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 transition-colors"
+              className="px-2 sm:px-3 py-2 text-xs sm:text-sm font-medium text-red-700 bg-white border border-red-300 rounded-md hover:bg-red-50 transition-colors"
             >
-              <Trash2 className="h-4 w-4 mr-2 inline" />
-              Clear
+              <Trash2 className="h-4 w-4 sm:mr-2 inline" />
+              <span className="hidden sm:inline">Clear</span>
             </button>
           </div>
         </div>
       </div>
 
       {/* Messages */}
-      <div className="flex-1 overflow-auto p-6 space-y-4">
+      <div className="flex-1 overflow-auto p-3 sm:p-6 space-y-4">
         {messages.map((message) => (
           <div
             key={message.id}
             className={`flex ${message.type === 'user' ? 'justify-end' : 'justify-start'}`}
           >
-            <div className={`flex space-x-3 max-w-3xl ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
+            <div className={`flex space-x-2 sm:space-x-3 max-w-full sm:max-w-3xl ${message.type === 'user' ? 'flex-row-reverse space-x-reverse' : ''}`}>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
                 message.type === 'user' ? 'bg-blue-600' : 'bg-gray-200'
               }`}>
@@ -159,7 +159,7 @@ export default function AIAssistant() {
                   <Bot className="h-5 w-5 text-gray-600" />
                 )}
               </div>
-              <div className={`flex-1 px-4 py-3 rounded-lg ${
+              <div className={`flex-1 px-3 sm:px-4 py-2 sm:py-3 rounded-lg ${
                 message.type === 'user'
                   ? 'bg-blue-600 text-white'
                   : 'bg-white border border-gray-200'
@@ -191,11 +191,11 @@ export default function AIAssistant() {
         
         {isLoading && (
           <div className="flex justify-start">
-            <div className="flex space-x-3 max-w-3xl">
+            <div className="flex space-x-2 sm:space-x-3 max-w-full sm:max-w-3xl">
               <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center">
                 <Bot className="h-5 w-5 text-gray-600" />
               </div>
-              <div className="bg-white border border-gray-200 px-4 py-3 rounded-lg">
+              <div className="bg-white border border-gray-200 px-3 sm:px-4 py-2 sm:py-3 rounded-lg">
                 <div className="flex space-x-1">
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"></div>
                   <div className="w-2 h-2 bg-gray-400 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
@@ -209,20 +209,20 @@ export default function AIAssistant() {
       </div>
 
       {/* Input */}
-      <div className="bg-white border-t border-gray-200 p-6">
-        <div className="flex space-x-4">
+      <div className="bg-white border-t border-gray-200 p-3 sm:p-6">
+        <div className="flex space-x-2 sm:space-x-4">
           <input
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyPress={(e) => e.key === 'Enter' && handleSend()}
             placeholder="Ask about marketing, finance, operations, strategy..."
-            className="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="flex-1 px-3 sm:px-4 py-2 sm:py-3 text-sm sm:text-base border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
           />
           <button
             onClick={handleSend}
             disabled={!input.trim() || isLoading}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="px-4 sm:px-6 py-2 sm:py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             <Send className="h-5 w-5" />
           </button>

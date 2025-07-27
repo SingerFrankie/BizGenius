@@ -83,16 +83,16 @@ export default function BusinessPlan() {
 
   if (showGenerator) {
     return (
-      <div className="p-6">
+      <div className="p-3 sm:p-6">
         <div className="max-w-2xl mx-auto">
-          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-8">
             <div className="text-center mb-8">
               <FileText className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-              <h2 className="text-2xl font-bold text-gray-900">AI Business Plan Generator</h2>
-              <p className="text-gray-600 mt-2">Provide some details and our AI will create a comprehensive business plan for you</p>
+              <h2 className="text-xl sm:text-2xl font-bold text-gray-900">AI Business Plan Generator</h2>
+              <p className="text-sm sm:text-base text-gray-600 mt-2">Provide some details and our AI will create a comprehensive business plan for you</p>
             </div>
 
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Business Name
@@ -106,7 +106,7 @@ export default function BusinessPlan() {
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Industry
@@ -166,17 +166,17 @@ export default function BusinessPlan() {
                 />
               </div>
 
-              <div className="flex space-x-4 pt-6">
+              <div className="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-4 pt-6">
                 <button
                   onClick={() => setShowGenerator(false)}
-                  className="flex-1 px-6 py-3 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="flex-1 px-6 py-3 text-sm sm:text-base border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleGeneratePlan}
                   disabled={!formData.businessName || !formData.industry || isGenerating}
-                  className="flex-1 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
+                  className="flex-1 px-6 py-3 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center justify-center"
                 >
                   {isGenerating ? (
                     <>
@@ -196,28 +196,29 @@ export default function BusinessPlan() {
   }
 
   return (
-    <div className="p-6">
+    <div className="p-3 sm:p-6">
       <div className="flex items-center justify-between mb-8">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Business Plans</h1>
-          <p className="text-gray-600 mt-1">Create and manage your business plans with AI assistance</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Business Plans</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Create and manage your business plans with AI assistance</p>
         </div>
         <button
           onClick={() => setShowGenerator(true)}
-          className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
+          className="px-3 sm:px-6 py-2 sm:py-3 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center space-x-2"
         >
           <Plus className="h-5 w-5" />
-          <span>New Plan</span>
+          <span className="hidden sm:inline">New Plan</span>
+          <span className="sm:hidden">New</span>
         </button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
         {plans.map((plan) => (
           <div key={plan.id} className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden hover:shadow-md transition-shadow">
-            <div className="p-6">
+            <div className="p-4 sm:p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-1">{plan.title}</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-1">{plan.title}</h3>
                   <p className="text-sm text-gray-600">{plan.industry}</p>
                 </div>
                 <span className={`px-2 py-1 text-xs font-medium rounded-full ${
@@ -233,35 +234,35 @@ export default function BusinessPlan() {
                 Last modified: {plan.lastModified.toLocaleDateString()}
               </p>
 
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-1 sm:space-x-2">
                 <button className="flex-1 px-3 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 transition-colors flex items-center justify-center">
                   <Eye className="h-4 w-4 mr-1" />
-                  View
+                  <span className="hidden sm:inline">View</span>
                 </button>
                 <button className="flex-1 px-3 py-2 text-sm font-medium text-blue-700 bg-blue-100 rounded-md hover:bg-blue-200 transition-colors flex items-center justify-center">
                   <Edit className="h-4 w-4 mr-1" />
-                  Edit
+                  <span className="hidden sm:inline">Edit</span>
                 </button>
                 <div className="relative group">
-                  <button className="px-3 py-2 text-sm font-medium text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 transition-colors">
+                  <button className="px-2 sm:px-3 py-2 text-sm font-medium text-teal-700 bg-teal-100 rounded-md hover:bg-teal-200 transition-colors">
                     <Download className="h-4 w-4" />
                   </button>
-                  <div className="absolute right-0 mt-2 w-32 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
+                  <div className="absolute right-0 mt-2 w-28 sm:w-32 bg-white rounded-md shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-10">
                     <button
                       onClick={() => exportPlan(plan.id, 'pdf')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Export PDF
                     </button>
                     <button
                       onClick={() => exportPlan(plan.id, 'docx')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Export Word
                     </button>
                     <button
                       onClick={() => exportPlan(plan.id, 'pptx')}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="block w-full text-left px-3 sm:px-4 py-2 text-xs sm:text-sm text-gray-700 hover:bg-gray-100"
                     >
                       Export PPT
                     </button>
@@ -269,7 +270,7 @@ export default function BusinessPlan() {
                 </div>
                 <button
                   onClick={() => deletePlan(plan.id)}
-                  className="px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
+                  className="px-2 sm:px-3 py-2 text-sm font-medium text-red-700 bg-red-100 rounded-md hover:bg-red-200 transition-colors"
                 >
                   <Trash2 className="h-4 w-4" />
                 </button>

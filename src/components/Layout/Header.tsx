@@ -6,7 +6,7 @@ export default function Header() {
   const { user, logout } = useAuth();
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200 px-4 lg:px-6 py-4">
+    <header className="bg-white shadow-sm border-b border-gray-200 px-3 sm:px-4 lg:px-6 py-3 sm:py-4">
       <div className="flex items-center justify-between">
         <div className="flex-1 max-w-lg lg:block hidden">
           <div className="relative">
@@ -28,15 +28,15 @@ export default function Header() {
         
         <div className="flex items-center space-x-4">
           <button className="relative p-2 text-gray-600 hover:text-gray-900 transition-colors">
-            <Bell className="h-5 w-5" />
-            <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full"></span>
+            <Bell className="h-4 w-4 sm:h-5 sm:w-5" />
+            <span className="absolute -top-1 -right-1 h-2 w-2 sm:h-3 sm:w-3 bg-red-500 rounded-full"></span>
           </button>
           
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center space-x-2 sm:space-x-3">
             <img
               src={user?.avatar}
               alt={user?.name}
-              className="h-8 w-8 rounded-full ring-2 ring-gray-200"
+              className="h-6 w-6 sm:h-8 sm:w-8 rounded-full ring-2 ring-gray-200"
             />
             <div className="hidden lg:block">
               <p className="text-sm font-medium text-gray-900">{user?.name}</p>
@@ -46,7 +46,7 @@ export default function Header() {
               onClick={logout}
               className="hidden lg:block p-2 text-gray-600 hover:text-gray-900 transition-colors"
             >
-              <LogOut className="h-5 w-5" />
+              <LogOut className="h-4 w-4 sm:h-5 sm:w-5" />
             </button>
           </div>
         </div>
